@@ -1416,14 +1416,9 @@ class MaskRCNN(nn.Module):
         self.config = config
         self.model_dir = model_dir
         self.set_log_dir()
-        self.build(config=config)
         self.initialize_weights()
         self.loss_history = []
         self.val_loss_history = []
-
-    def build(self, config):
-        """Build Mask R-CNN architecture.
-        """
 
         # Image size must be dividable by 2 multiple times
         h, w = config.IMAGE_SHAPE[:2]
@@ -1484,77 +1479,7 @@ class MaskRCNN(nn.Module):
             elif isinstance(m, nn.Linear):
                 m.weight.data.normal_(0, 0.01)
                 m.bias.data.zero_()
-
-    def set_trainable(self, layer_regex, model=None, indent=0, verbose=1):
-        """Sets model layers as trainable if their names match
-        the given regular expression.
-        """
-
-        for param in self.named_parameters():
-            layer_name = param[0]
-            trainable = bool(re.fullmatch(layer_regex, layer_name))
-            if not trainable:
-                param[1].requires_grad = False
-
-    def set_log_dir(self, model_path=None):
-        """Sets the model log directory and epoch counter.
-
-        model_path: If None, or a format different from what this code uses
-            then set a new log directory and start epochs from 0. Otherwise,
-            extract the log directory and the epoch counter from the file
-            name.
-        """
-
-        # Set date and epoch counter as if starting a new model
-        self.epoch = 0
-        now = datetime.datetime.now()
-
-        # If we have a model path with date and epochs use them
-        if model_path:
-            # Continue from we left of. Get epoch and date from the file name
-            # A sample model path might look like:
-            # /path/to/logs/coco20171029T2315/mask_rcnn_coco_0001.h5
-            regex = r".*/\w+(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})/mask\_rcnn\_\w+(\d{4})\.pth"
-            m = re.match(regex, model_path)
-            if m:
-                now = datetime.datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)),
-                                        int(m.group(4)), int(m.group(5)))
-                self.epoch = int(m.group(6))
-
-        # Directory for training logs
-        self.log_dir = os.path.join(self.model_dir, "{}{:%Y%m%dT%H%M}".format(
-            self.config.NAME.lower(), now))
-
-        # Path to save after each epoch. Include placeholders that get filled by Keras.
-        self.checkpoint_path = os.path.join(self.log_dir, "mask_rcnn_{}_*epoch*.pth".format(
-            self.config.NAME.lower()))
-        self.checkpoint_path = self.checkpoint_path.replace(
-            "*epoch*", "{:04d}")
-
-    def find_last(self):
-        """Finds the last checkpoint file of the last trained model in the
-        model directory.
-        Returns:
-            log_dir: The directory where events and weights are saved
-            checkpoint_path: the path to the last checkpoint file
-        """
-        # Get directory names. Each directory corresponds to a model
-        dir_names = next(os.walk(self.model_dir))[1]
-        key = self.config.NAME.lower()
-        dir_names = filter(lambda f: f.startswith(key), dir_names)
-        dir_names = sorted(dir_names)
-        if not dir_names:
-            return None, None
-        # Pick last directory
-        dir_name = os.path.join(self.model_dir, dir_names[-1])
-        # Find the last checkpoint
-        checkpoints = next(os.walk(dir_name))[2]
-        checkpoints = filter(lambda f: f.startswith("mask_rcnn"), checkpoints)
-        checkpoints = sorted(checkpoints)
-        if not checkpoints:
-            return dir_name, None
-        checkpoint = os.path.join(dir_name, checkpoints[-1])
-        return dir_name, checkpoint
+    # 源代码设置了所有的bn层为不可训练，个人认为没有那个必要
 
     def load_weights(self, filepath):
         """Modified version of the correspoding Keras function with
@@ -1599,7 +1524,7 @@ class MaskRCNN(nn.Module):
         molded_images = Variable(molded_images, volatile=True)
 
         # Run object detection
-        detections, mrcnn_mask = self.predict([molded_images, image_metas], mode='inference')
+        detections, mrcnn_mask = self([molded_images, image_metas], mode='inference')
 
         # Convert to numpy
         detections = detections.data.cpu().numpy()
@@ -1619,22 +1544,9 @@ class MaskRCNN(nn.Module):
             })
         return results
 
-    def predict(self, input, mode):
+    def forward(self, input):
         molded_images = input[0]
         image_metas = input[1]
-
-        if mode == 'inference':
-            self.eval()
-        elif mode == 'training':
-            self.train()
-
-            # Set batchnorm always in eval mode during training
-            def set_bn_eval(m):
-                classname = m.__class__.__name__
-                if classname.find('BatchNorm') != -1:
-                    m.eval()
-
-            self.apply(set_bn_eval)
 
         # Feature extraction
         [p2_out, p3_out, p4_out, p5_out, p6_out] = self.fpn(molded_images)
@@ -1667,38 +1579,7 @@ class MaskRCNN(nn.Module):
                                  anchors=self.anchors,
                                  config=self.config)
 
-        if mode == 'inference':
-            # Network Heads
-            # Proposal classifier and BBox regressor heads
-            mrcnn_class_logits, mrcnn_class, mrcnn_bbox = self.classifier(mrcnn_feature_maps, rpn_rois)
-
-            # Detections
-            # output is [batch, num_detections, (y1, x1, y2, x2, class_id, score)] in image coordinates
-            detections = detection_layer(self.config, rpn_rois, mrcnn_class, mrcnn_bbox, image_metas)
-
-            # Convert boxes to normalized coordinates
-            # TODO: let DetectionLayer return normalized coordinates to avoid
-            #       unnecessary conversions
-            h, w = self.config.IMAGE_SHAPE[:2]
-            scale = Variable(torch.from_numpy(np.array([h, w, h, w])).float(), requires_grad=False)
-            if self.config.GPU_COUNT:
-                scale = scale.cuda()
-            detection_boxes = detections[:, :4] / scale
-
-            # Add back batch dimension
-            detection_boxes = detection_boxes.unsqueeze(0)
-
-            # Create masks for detections
-            mrcnn_mask = self.mask(mrcnn_feature_maps, detection_boxes)
-
-            # Add back batch dimension
-            detections = detections.unsqueeze(0)
-            mrcnn_mask = mrcnn_mask.unsqueeze(0)
-
-            return [detections, mrcnn_mask]
-
-        elif mode == 'training':
-
+        if self.training:
             gt_class_ids = input[2]
             gt_boxes = input[3]
             gt_masks = input[4]
@@ -1736,7 +1617,36 @@ class MaskRCNN(nn.Module):
                 mrcnn_mask = self.mask(mrcnn_feature_maps, rois)
 
             return [rpn_class_logits, rpn_bbox, target_class_ids, mrcnn_class_logits, target_deltas, mrcnn_bbox, target_mask, mrcnn_mask]
+        else:
+            # Network Heads
+            # Proposal classifier and BBox regressor heads
+            mrcnn_class_logits, mrcnn_class, mrcnn_bbox = self.classifier(mrcnn_feature_maps, rpn_rois)
 
+            # Detections
+            # output is [batch, num_detections, (y1, x1, y2, x2, class_id, score)] in image coordinates
+            detections = detection_layer(self.config, rpn_rois, mrcnn_class, mrcnn_bbox, image_metas)
+
+            # Convert boxes to normalized coordinates
+            # TODO: let DetectionLayer return normalized coordinates to avoid
+            #       unnecessary conversions
+            h, w = self.config.IMAGE_SHAPE[:2]
+            scale = Variable(torch.from_numpy(np.array([h, w, h, w])).float(), requires_grad=False)
+            if self.config.GPU_COUNT:
+                scale = scale.cuda()
+            detection_boxes = detections[:, :4] / scale
+
+            # Add back batch dimension
+            detection_boxes = detection_boxes.unsqueeze(0)
+
+            # Create masks for detections
+            mrcnn_mask = self.mask(mrcnn_feature_maps, detection_boxes)
+
+            # Add back batch dimension
+            detections = detections.unsqueeze(0)
+            mrcnn_mask = mrcnn_mask.unsqueeze(0)
+
+            return [detections, mrcnn_mask]
+        
     def train_model(self, train_dataset, val_dataset, learning_rate, epochs, layers):
         """Train the model.
         train_dataset, val_dataset: Training and validation Dataset objects.
@@ -1808,163 +1718,6 @@ class MaskRCNN(nn.Module):
             torch.save(self.state_dict(), self.checkpoint_path.format(epoch))
 
         self.epoch = epochs
-
-
-
-    def train_epoch(self, datagenerator, optimizer, steps):
-        batch_count = 0
-        loss_sum = 0
-        loss_rpn_class_sum = 0
-        loss_rpn_bbox_sum = 0
-        loss_mrcnn_class_sum = 0
-        loss_mrcnn_bbox_sum = 0
-        loss_mrcnn_mask_sum = 0
-        step = 0
-
-        optimizer.zero_grad()
-
-        for inputs in datagenerator:
-            batch_count += 1
-
-            images = inputs[0]
-            image_metas = inputs[1]
-            rpn_match = inputs[2]
-            rpn_bbox = inputs[3]
-            gt_class_ids = inputs[4]
-            gt_boxes = inputs[5]
-            gt_masks = inputs[6]
-
-            # image_metas as numpy array
-            image_metas = image_metas.numpy()
-
-            # Wrap in variables
-            images = Variable(images)
-            rpn_match = Variable(rpn_match)
-            rpn_bbox = Variable(rpn_bbox)
-            gt_class_ids = Variable(gt_class_ids)
-            gt_boxes = Variable(gt_boxes)
-            gt_masks = Variable(gt_masks)
-
-            # To GPU
-            if self.config.GPU_COUNT:
-                images = images.cuda()
-                rpn_match = rpn_match.cuda()
-                rpn_bbox = rpn_bbox.cuda()
-                gt_class_ids = gt_class_ids.cuda()
-                gt_boxes = gt_boxes.cuda()
-                gt_masks = gt_masks.cuda()
-
-            # Run object detection
-            rpn_class_logits, rpn_pred_bbox, target_class_ids, mrcnn_class_logits, target_deltas, mrcnn_bbox, target_mask, mrcnn_mask = \
-                self.predict([images, image_metas, gt_class_ids, gt_boxes, gt_masks], mode='training')
-
-            # Compute losses
-            rpn_class_loss, rpn_bbox_loss, mrcnn_class_loss, mrcnn_bbox_loss, mrcnn_mask_loss = compute_losses(rpn_match, rpn_bbox, rpn_class_logits, rpn_pred_bbox, target_class_ids, mrcnn_class_logits, target_deltas, mrcnn_bbox, target_mask, mrcnn_mask)
-            loss = rpn_class_loss + rpn_bbox_loss + mrcnn_class_loss + mrcnn_bbox_loss + mrcnn_mask_loss
-
-            # Backpropagation
-            loss.backward()
-            torch.nn.utils.clip_grad_norm(self.parameters(), 5.0)
-            if (batch_count % self.config.BATCH_SIZE) == 0:
-                optimizer.step()
-                optimizer.zero_grad()
-                batch_count = 0
-
-            # Progress
-            # printProgressBar(step + 1, steps, prefix="\t{}/{}".format(step + 1, steps),
-            #                  suffix="Complete - loss: {:.5f} - rpn_class_loss: {:.5f} - rpn_bbox_loss: {:.5f} - mrcnn_class_loss: {:.5f} - mrcnn_bbox_loss: {:.5f} - mrcnn_mask_loss: {:.5f}".format(
-            #                      loss.data.cpu()[0], rpn_class_loss.data.cpu()[0], rpn_bbox_loss.data.cpu()[0],
-            #                      mrcnn_class_loss.data.cpu()[0], mrcnn_bbox_loss.data.cpu()[0],
-            #                      mrcnn_mask_loss.data.cpu()[0]), length=10)
-
-            # Statistics
-            loss_sum += loss.data.cpu()[0]/steps
-            loss_rpn_class_sum += rpn_class_loss.data.cpu()[0]/steps
-            loss_rpn_bbox_sum += rpn_bbox_loss.data.cpu()[0]/steps
-            loss_mrcnn_class_sum += mrcnn_class_loss.data.cpu()[0]/steps
-            loss_mrcnn_bbox_sum += mrcnn_bbox_loss.data.cpu()[0]/steps
-            loss_mrcnn_mask_sum += mrcnn_mask_loss.data.cpu()[0]/steps
-
-            # Break after 'steps' steps
-            if step==steps-1:
-                break
-            step += 1
-
-        return loss_sum, loss_rpn_class_sum, loss_rpn_bbox_sum, loss_mrcnn_class_sum, loss_mrcnn_bbox_sum, loss_mrcnn_mask_sum
-
-    def valid_epoch(self, datagenerator, steps):
-
-        step = 0
-        loss_sum = 0
-        loss_rpn_class_sum = 0
-        loss_rpn_bbox_sum = 0
-        loss_mrcnn_class_sum = 0
-        loss_mrcnn_bbox_sum = 0
-        loss_mrcnn_mask_sum = 0
-
-        for inputs in datagenerator:
-            images = inputs[0]
-            image_metas = inputs[1]
-            rpn_match = inputs[2]
-            rpn_bbox = inputs[3]
-            gt_class_ids = inputs[4]
-            gt_boxes = inputs[5]
-            gt_masks = inputs[6]
-
-            # image_metas as numpy array
-            image_metas = image_metas.numpy()
-
-            # Wrap in variables
-            images = Variable(images, volatile=True)
-            rpn_match = Variable(rpn_match, volatile=True)
-            rpn_bbox = Variable(rpn_bbox, volatile=True)
-            gt_class_ids = Variable(gt_class_ids, volatile=True)
-            gt_boxes = Variable(gt_boxes, volatile=True)
-            gt_masks = Variable(gt_masks, volatile=True)
-
-            # To GPU
-            if self.config.GPU_COUNT:
-                images = images.cuda()
-                rpn_match = rpn_match.cuda()
-                rpn_bbox = rpn_bbox.cuda()
-                gt_class_ids = gt_class_ids.cuda()
-                gt_boxes = gt_boxes.cuda()
-                gt_masks = gt_masks.cuda()
-
-            # Run object detection
-            rpn_class_logits, rpn_pred_bbox, target_class_ids, mrcnn_class_logits, target_deltas, mrcnn_bbox, target_mask, mrcnn_mask = \
-                self.predict([images, image_metas, gt_class_ids, gt_boxes, gt_masks], mode='training')
-
-            if not target_class_ids.size():
-                continue
-
-            # Compute losses
-            rpn_class_loss, rpn_bbox_loss, mrcnn_class_loss, mrcnn_bbox_loss, mrcnn_mask_loss = compute_losses(rpn_match, rpn_bbox, rpn_class_logits, rpn_pred_bbox, target_class_ids, mrcnn_class_logits, target_deltas, mrcnn_bbox, target_mask, mrcnn_mask)
-            loss = rpn_class_loss + rpn_bbox_loss + mrcnn_class_loss + mrcnn_bbox_loss + mrcnn_mask_loss
-
-            # Progress
-            # printProgressBar(step + 1, steps, prefix="\t{}/{}".format(step + 1, steps),
-            #                  suffix="Complete - loss: {:.5f} - rpn_class_loss: {:.5f} - rpn_bbox_loss: {:.5f} - mrcnn_class_loss: {:.5f} - mrcnn_bbox_loss: {:.5f} - mrcnn_mask_loss: {:.5f}".format(
-            #                      loss.data.cpu()[0], rpn_class_loss.data.cpu()[0], rpn_bbox_loss.data.cpu()[0],
-            #                      mrcnn_class_loss.data.cpu()[0], mrcnn_bbox_loss.data.cpu()[0],
-            #                      mrcnn_mask_loss.data.cpu()[0]), length=10)
-
-            # Statistics
-            loss_sum += loss.data.cpu()[0]/steps
-            loss_rpn_class_sum += rpn_class_loss.data.cpu()[0]/steps
-            loss_rpn_bbox_sum += rpn_bbox_loss.data.cpu()[0]/steps
-            loss_mrcnn_class_sum += mrcnn_class_loss.data.cpu()[0]/steps
-            loss_mrcnn_bbox_sum += mrcnn_bbox_loss.data.cpu()[0]/steps
-            loss_mrcnn_mask_sum += mrcnn_mask_loss.data.cpu()[0]/steps
-
-            # Break after 'steps' steps
-            if step==steps-1:
-                break
-            step += 1
-
-        return loss_sum, loss_rpn_class_sum, loss_rpn_bbox_sum, loss_mrcnn_class_sum, loss_mrcnn_bbox_sum, loss_mrcnn_mask_sum
-
-
 
     def mold_inputs(self, images):
         """Takes a list of images and modifies them to the format expected
