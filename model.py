@@ -14,4 +14,4 @@ class ROP_dig(nn.Module):
     def forward(self,x):
         pass
         return x
-    
+
