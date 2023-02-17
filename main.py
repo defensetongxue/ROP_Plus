@@ -1,5 +1,5 @@
 import torch 
-from test_model import Inception3 as build_model
+from CNNs.Inception3 import Inception3 as build_model
 from dataloader import generate_test_data, generate_dataloader
 from train import train_process
 import torch.optim as optim

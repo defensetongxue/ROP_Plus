@@ -1,7 +1,6 @@
 from CNNs.MaskRCNN import MaskRCNN
 from CNNs.resUnet import ResUnet
 import torch.nn as nn
-import torch 
 import numpy as np
 class ROP_dig(nn.Module):
     def __init__(self,config) -> None:
