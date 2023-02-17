@@ -47,7 +47,8 @@ def generate_test_data(PATH="../autodl-tmp/",TEST_DATA=100,clear=True):
                 else:
                     neg_cnt=neg_cnt+1
                 push_image(test_dic,os.path.join(file_dic,file),label)
-    return pos_cnt,neg_cnt
+    print("there is totally {} positive data and {} negtive data".format(pos_cnt,neg_cnt))
+    return
 
 
 def generate_dataloader(PATH="../autodl-tmp",train_proportion=0.6,batch_size=2,shuffle=True):
@@ -69,7 +70,8 @@ def generate_dataloader(PATH="../autodl-tmp",train_proportion=0.6,batch_size=2,s
     train_dataset, test_dataset = torch.utils.data.random_split(full_dataset, [train_size, test_size])
     train_dataloader=torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle)
     test_dataloader=torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=shuffle)
-    return train_dataloader,test_dataloader,(train_dataset),(test_dataset)
+    num_class=len(full_dataset.classes)
+    return train_dataloader,test_dataloader,len(train_dataset),len(test_dataset),num_class
                 
 
         

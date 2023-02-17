@@ -103,8 +103,6 @@ class Inception3(nn.Module):
         # N*2048
         x = self.group1(x)
         # N*2(num_classes)
-        if self.training and self.aux_logits:
-            return x, aux #excu
         return x
 
 
