@@ -7,6 +7,7 @@ from sklearn.metrics import roc_auc_score
 
 class train_process():
     def __init__(self, epoch, lr=1e-3, loss_func=nn.CrossEntropyLoss):
+        super(train_process,self).__init__()
         self.epoch = epoch
         self.lr = lr
         self.loss_func = loss_func
@@ -28,7 +29,6 @@ class train_process():
                 loss = self.loss_func(out, batch_y)
                 train_loss += loss.data.item()
                 pred = torch.max(out, 1)[1]
-
                 train_correct = (pred == batch_y).sum()
                 train_accu += train_correct.data.item()
                 auc_train += roc_auc_score(pred.cpu(), batch_y.cpu()).sum()
@@ -37,7 +37,7 @@ class train_process():
                 optimizer.step()
             mean_loss = train_loss/train_len
             mean_accu = train_accu/train_len
-            auc_train = auc_train/train_len
+            auc_train = auc_train/len(train_loader)
             if logging:
                 print('epoch :{} Training Loss : {:.6f}, Accu: {:.6f}, Auc:{:.6f}'.format(
                     epoch, mean_loss, mean_accu, auc_train))
@@ -61,7 +61,7 @@ class train_process():
                     # auc_score += step_auc_score
                 mean_loss = eval_loss/test_len
                 mean_accu = eval_accu/test_len
-                auc_score =auc_score/test_len
+                auc_score =auc_score/len(test_loader)
                 if logging:
                     print('Testing Loss:{:.6f},Accu:{:.6f},Auc:{:.6f}'.format(
                         mean_loss,mean_accu,auc_score))
