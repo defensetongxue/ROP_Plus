@@ -5,7 +5,7 @@ from torchvision import datasets, transforms
 from PIL import Image
 
 
-def generate_test_data(PATH="../autodl-tmp/", TEST_DATA=100, clear=True):
+def generate_test_data(PATH="../autodl-tmp/", TEST_DATA=100):
     '''
     find the original data in "PATH/data" and generate test data in "PATH/test"
     '''
@@ -28,8 +28,9 @@ def generate_test_data(PATH="../autodl-tmp/", TEST_DATA=100, clear=True):
             # neg_cnt=neg_cnt+1
             return "NO"
 
-    if clear:
-        os.system("rm -rf {}".format(os.path.join(PATH, 'test/*')))
+    #clear original data in PATH/test
+    os.system("rm -rf {}".format(os.path.join(PATH, 'test/*')))
+
     data_cnt = 0
     test_dic = os.path.join(PATH, "test")
     for person_file in os.listdir(os.path.join(PATH, 'data')):

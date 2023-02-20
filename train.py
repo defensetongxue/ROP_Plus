@@ -6,16 +6,13 @@ from sklearn.metrics import roc_auc_score
 
 
 class train_process():
-    def __init__(self, epoch, lr=1e-3, loss_func=nn.CrossEntropyLoss):
+    def __init__(self, epoch, loss_func=nn.CrossEntropyLoss):
         super(train_process, self).__init__()
         self.epoch = epoch
-        self.lr = lr
         self.loss_func = loss_func
 
     def train(self, model, train_loader, test_loader, train_len, test_len,
               optimizer=None, logging=False, save_model=False, model_name="None"):
-        if optimizer is None:
-            optimizer = optim.Adam(model.parameters(), lr=self.lr)
         print("begin_trainning process")
         for epoch in range(self.epoch):
             model.train()
@@ -25,20 +22,12 @@ class train_process():
             for batch_x, batch_y in train_loader:
                 batch_x, batch_y = (batch_x).cuda(), (batch_y).cuda()
                 optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-                # out = model(batch_x)
-                # loss = self.loss_func(out, batch_y)
-                # pred = torch.max(out, 1)[1]
-
-                # aux classifier in inception_v3
                 logits, aux = model(batch_x)
                 loss = self.loss_func(logits, batch_y) + \
                     self.loss_func(aux, batch_y)
                 pred = torch.max(logits, 1)[1]
-                ###
                 pred_train.append(pred)
                 label_train.append(batch_y)
-
                 train_loss += loss.data.item()
                 optimizer.zero_grad()
                 loss.backward()
