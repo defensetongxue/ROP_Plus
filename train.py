@@ -13,7 +13,7 @@ class train_process():
         self.loss_func = loss_func
 
     def train(self, model, train_loader, test_loader, train_len, test_len, 
-            optimizer=None, logging=False,save_model=False):
+            optimizer=None, logging=False,save_model=False,model_name="None"):
         if optimizer is None:
             optimizer = optim.Adam(model.parameters(), lr=self.lr)
         print("begin_trainning process")
@@ -67,5 +67,5 @@ class train_process():
                         mean_loss,mean_accu,auc_score))
 
             if save_model:
-                name = 'inception3'+'_'+str(epoch)+'.pkl'
+                name = "{}.pkl".format(model_name)
                 torch.save(model, './models/'+name)

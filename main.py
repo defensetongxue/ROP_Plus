@@ -1,5 +1,5 @@
 import torch 
-from CNNs.Inception3 import Inception3 as build_model
+from CNNs.inception_v3_pre import build_inception3_pretrained as build_model
 from dataloader import generate_test_data, generate_dataloader
 from train import train_process
 import torch.optim as optim
@@ -31,5 +31,6 @@ train_processer.train(model=model,
         test_len=test_len,
         optimizer=optimizer,
         logging=True,
-        save_model=True)
+        save_model=True,
+        model_name="inceptionv2_pre")
         

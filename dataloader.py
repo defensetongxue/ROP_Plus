@@ -66,11 +66,12 @@ def generate_dataloader(PATH="../autodl-tmp", train_proportion=0.6, batch_size=6
     '''
     # test_proportion=1-train_proportion
 
-    data_transfrom = transforms.Compose([  # 图片读取样式
-        transforms.Resize((299, 299)),
-        transforms.ToTensor(),             # 向量化,向量化时 每个点的像素值会除以255,整个向量中的元素值都在0-1之间
-    ])
-
+    data_transfrom = transforms.Compose([
+    transforms.Resize(299),
+    transforms.CenterCrop(299),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+])
     full_dataset = datasets.ImageFolder(os.path.join(
         PATH, "test"), transform=data_transfrom)  # 指明读取的文件夹和读取方式,注意指明的是到文件夹的路径,不是到图片的路径
 
@@ -81,8 +82,8 @@ def generate_dataloader(PATH="../autodl-tmp", train_proportion=0.6, batch_size=6
     train_dataset, test_dataset = torch.utils.data.random_split(
         full_dataset, [train_size, test_size])
     train_dataloader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=shuffle)
+        train_dataset, batch_size=batch_size, shuffle=shuffle,drop_last=True)
     test_dataloader = torch.utils.data.DataLoader(
-        test_dataset, batch_size=batch_size, shuffle=shuffle)
+        test_dataset, batch_size=batch_size, shuffle=shuffle,drop_last=True)
     num_class = len(full_dataset.classes)
     return train_dataloader, test_dataloader, len(train_dataset), len(test_dataset), num_class
