@@ -5,14 +5,14 @@ from train import train_process
 import torch.optim as optim
 
 PATH = "../autodl-tmp/"
-TEST_DATA = 6480
+TEST_DATA = 1e10
 clear_original_test_data = True
 train_proportion = 0.6
 batch_size = 128
 epoch=10
 lr=1e-3
 loss_func=torch.nn.CrossEntropyLoss()
-GEN_DATA=False
+GEN_DATA=True
 
 if GEN_DATA:
         generate_test_data(PATH=PATH, TEST_DATA=TEST_DATA,

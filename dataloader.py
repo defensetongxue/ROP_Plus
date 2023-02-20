@@ -2,7 +2,7 @@ import shutil
 import os
 import torch
 from torchvision import datasets, transforms
-
+from PIL import Image
 
 
 def generate_test_data(PATH="../autodl-tmp/", TEST_DATA=100, clear=True):
@@ -42,8 +42,12 @@ def generate_test_data(PATH="../autodl-tmp/", TEST_DATA=100, clear=True):
                 continue
             for file in os.listdir(file_dic):
                 if not file.endswith(".jpg"):
-                    print(file)
-                    raise
+                    continue # todo: there are some png img
+                try:
+                    Image.open(os.path.join(file_dic,file))
+                except:
+                    print("{} can not open".format(os.path.join(file_dic,file)))
+                    continue
                 data_cnt += 1
                 if data_cnt > TEST_DATA:
                     print("there is totally {} positive data and {} negtive data".format(
