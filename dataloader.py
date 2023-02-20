@@ -65,7 +65,7 @@ def generate_test_data(PATH="../autodl-tmp/", TEST_DATA=100):
     return
 
 
-def generate_dataloader(PATH="../autodl-tmp", train_proportion=0.6, batch_size=64, shuffle=True):
+def generate_dataloader(PATH="../autodl-tmp", train_proportion=0.6, val_proportion=0.2 ,batch_size=64, shuffle=True):
     '''
     generate train and test data in "pytorch.dataloader" format.
     '''
@@ -82,13 +82,16 @@ def generate_dataloader(PATH="../autodl-tmp", train_proportion=0.6, batch_size=6
 
     data_size = len(full_dataset)
     train_size = int(data_size*train_proportion)
-    test_size = data_size-train_size
+    val_size=int(data_size*val_proportion)
+    test_size = data_size-train_size-val_size
 
-    train_dataset, test_dataset = torch.utils.data.random_split(
-        full_dataset, [train_size, test_size])
+    train_dataset,val_dataset, test_dataset = torch.utils.data.random_split(
+        full_dataset, [train_size,val_size, test_size])
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset, batch_size=batch_size, shuffle=shuffle)
+    val_dataloader = torch.utils.data.DataLoader(
+        val_dataset, batch_size=batch_size, shuffle=shuffle)
     test_dataloader = torch.utils.data.DataLoader(
         test_dataset, batch_size=batch_size, shuffle=shuffle)
     num_class = len(full_dataset.classes)
-    return train_dataloader, test_dataloader, len(train_dataset), len(test_dataset), num_class
+    return train_dataloader,val_dataloader, test_dataloader, train_size,val_size, test_size, num_class
