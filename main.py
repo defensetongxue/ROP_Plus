@@ -12,9 +12,10 @@ batch_size = 128
 epoch=10
 lr=1e-3
 loss_func=torch.nn.CrossEntropyLoss()
+GEN_DATA=False
 
-
-generate_test_data(PATH=PATH, TEST_DATA=TEST_DATA,
+if GEN_DATA:
+        generate_test_data(PATH=PATH, TEST_DATA=TEST_DATA,
                    clear=clear_original_test_data)
 
 train_loader, test_loader, train_len, test_len ,num_class= generate_dataloader(PATH=PATH,

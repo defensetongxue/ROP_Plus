@@ -73,7 +73,7 @@ def generate_dataloader(PATH="../autodl-tmp", train_proportion=0.6, batch_size=6
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
     full_dataset = datasets.ImageFolder(os.path.join(
-        PATH, "test"), transform=data_transfrom)  # 指明读取的文件夹和读取方式,注意指明的是到文件夹的路径,不是到图片的路径
+        PATH, "test"), transform=data_transfrom)  
 
     data_size = len(full_dataset)
     train_size = int(data_size*train_proportion)
@@ -82,8 +82,8 @@ def generate_dataloader(PATH="../autodl-tmp", train_proportion=0.6, batch_size=6
     train_dataset, test_dataset = torch.utils.data.random_split(
         full_dataset, [train_size, test_size])
     train_dataloader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=shuffle,drop_last=True)
+        train_dataset, batch_size=batch_size, shuffle=shuffle)
     test_dataloader = torch.utils.data.DataLoader(
-        test_dataset, batch_size=batch_size, shuffle=shuffle,drop_last=True)
+        test_dataset, batch_size=batch_size, shuffle=shuffle)
     num_class = len(full_dataset.classes)
     return train_dataloader, test_dataloader, len(train_dataset), len(test_dataset), num_class
