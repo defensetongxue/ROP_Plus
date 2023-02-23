@@ -8,7 +8,9 @@ import torch.nn as nn
 
 
 class vessel_seg_model(nn.Module):
-    def __init__(self, model_name="LadderNet", pretrained=True, pretrain_path=""):
+    def __init__(self, model_name="LadderNet",
+                 pretrained=True,
+                 pretrain_path="./Vessel_Seg/save_model/best_model.pth"):
         super(vessel_seg_model, self).__init__()
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
@@ -28,7 +30,10 @@ class vessel_seg_model(nn.Module):
                     self.pretrain_path)
             return net
 
-    def forward(self, data, test_patch_height, test_patch_width, stride_height, stride_width):
+    def forward(self, data,
+                test_patch_height,
+                test_patch_width, stride_height,
+                stride_width):
         '''
         receive a type data set and return an new dataset
         '''
@@ -48,7 +53,11 @@ class vessel_seg_model(nn.Module):
         pred_imgs = pred_imgs[:, :, 0:img_height, 0:img_width]
         return pred_imgs
 
-    def preprocess(self, img, test_patch_height, test_patch_width, stride_height, stride_width):
+    def preprocess(self, img,
+                   test_patch_height,
+                   test_patch_width,
+                   stride_height,
+                   stride_width):
         img = np.array(img)
         imgs = rgb2gray(img)
         imgs = dataset_normalized(imgs)
@@ -64,7 +73,9 @@ class vessel_seg_model(nn.Module):
             test_set, batch_size=64, shuffle=False, num_workers=3)
         return test_loader
 
-    def paint_border_overlap(full_imgs, patch_h, patch_w, stride_h, stride_w):
+    def paint_border_overlap(full_imgs,
+                             patch_h, patch_w,
+                             stride_h, stride_w):
         assert (len(full_imgs.shape) == 4)  # 4D arrays
         # check the channel is 1 or 3
         assert (full_imgs.shape[1] == 1 or full_imgs.shape[1] == 3)
