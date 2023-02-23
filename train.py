@@ -11,7 +11,7 @@ class train_process():
         self.epoch = epoch
         self.loss_func = loss_func
 
-    def train(self, model, train_loader, val_loader,test_loader, train_len, val_len,test_len,
+    def train(self, model,ves_model, train_loader, val_loader,test_loader, train_len, val_len,test_len,
               optimizer=None, logging=False, ):
         print("begin_trainning process")
         for epoch in range(self.epoch):
@@ -22,6 +22,7 @@ class train_process():
             for batch_x, batch_y in train_loader:
                 batch_x, batch_y = (batch_x).cuda(), (batch_y).cuda()
                 optimizer = optim.Adam(model.parameters(), lr=0.001)
+                batch_x=ves_model(batch_x)
                 logits, aux = model(batch_x)
                 loss = self.loss_func(logits, batch_y) + \
                     self.loss_func(aux, batch_y)
@@ -48,6 +49,7 @@ class train_process():
                 label_val = []
                 for batch_x, batch_y in val_loader:
                     batch_x, batch_y = batch_x.cuda(), batch_y.cuda()
+                    batch_x=ves_model(batch_x)
                     out = model(batch_x)
                     loss = self.loss_func(out.cpu(), batch_y.cpu())
                     eval_loss += loss.data.item()
@@ -76,6 +78,7 @@ class train_process():
             label_test = []
             for batch_x, batch_y in test_loader:
                 batch_x, batch_y = batch_x.cuda(), batch_y.cuda()
+                batch_x=ves_model(batch_x)
                 out = model(batch_x)
                 pred = torch.max(out, 1)[1]
                 pred_test.append(pred)

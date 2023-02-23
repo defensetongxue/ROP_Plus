@@ -26,6 +26,7 @@ train_processer = train_process(epoch=args.epoch, loss_func=loss_func)
 optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
 train_processer.train(model=model,
+                        ves_model=Vessel_Seg_model,
                       train_loader=train_loader,
                       val_loader=val_loader,
                       test_loader=test_loader,
