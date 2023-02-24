@@ -9,3 +9,7 @@ Epoch 5 Train: loss:0.001874, Acc:0.957571, Auc:0.949901| Val: loss:0.006135, Ac
 Epoch 6 Train: loss:0.001770, Acc:0.964239, Auc:0.959616| Val: loss:0.004418, Acc:0.888754, Auc:0.900317
 Epoch 7 Train: loss:0.001469, Acc:0.968078, Auc:0.964548| Val: loss:0.002307, Acc:0.919066, Auc:0.908664
 Epoch 8 Train: loss:0.001347, Acc:0.972927, Auc:0.967022| Val: loss:0.003307, Acc:0.917854, Auc:0.901791
+Epoch 9 Train: loss:0.001097, Acc:0.975250, Auc:0.970437| Val: loss:0.003271, Acc:0.909973, Auc:0.898569
+Epoch 10 Train: loss:0.001060, Acc:0.977371, Auc:0.973221| Val: loss:0.017956, Acc:0.895120, Auc:0.878190
+Epoch 11 Train: loss:0.001035, Acc:0.977877, Auc:0.974100| Val: loss:0.003882, Acc:0.914823, Auc:0.891607
+Epoch 12 Train: loss:0.001027, Acc:0.981715, Auc:0.978361| Val: loss:0.027777, Acc:0.815399, Auc:0.878885

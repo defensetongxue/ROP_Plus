@@ -107,11 +107,8 @@ class vessel_seg_model(nn.Module):
     def extract_ordered_overlap(self,full_imgs):
         assert (len(full_imgs.shape) == 4)  # 4D arrays
         # check the channel is 1 or 3
-        assert (full_imgs.shape[1] == 1 or full_imgs.shape[1] == 3)
         img_h = full_imgs.shape[2]  # height of the full image
         img_w = full_imgs.shape[3]  # width of the full image
-        assert ((img_h-self.patch_height) % self.stride_height ==
-                0 and (img_w-self.patch_width) % self.stride_width == 0)
         # // --> division between integers
         N_patches_img = ((img_h-self.patch_height)//self.stride_height+1) * \
             ((img_w-self.patch_width)//self.stride_width+1)
