@@ -14,6 +14,3 @@ Epoch 10 Train: loss:0.001060, Acc:0.977371, Auc:0.973221| Val: loss:0.017956, A
 Epoch 11 Train: loss:0.001035, Acc:0.977877, Auc:0.974100| Val: loss:0.003882, Acc:0.914823, Auc:0.891607
 Epoch 12 Train: loss:0.001027, Acc:0.981715, Auc:0.978361| Val: loss:0.027777, Acc:0.815399, Auc:0.878885
 Epoch 13 Train: loss:0.001076, Acc:0.979695, Auc:0.975653| Val: loss:0.002523, Acc:0.925129, Auc:0.922166
-Epoch 14 Train: loss:0.000856, Acc:0.983332, Auc:0.980264| Val: loss:0.014653, Acc:0.877236, Auc:0.900581
-Test: acc:0.877310 auc:0.904614
-data_size: train:9899, val:3299, test:3301
