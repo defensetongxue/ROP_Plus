@@ -1,6 +1,6 @@
 import torch
-from models.LadderNet import LadderNet
-from tmp_lib import *
+from Vessel_Seg.models.LadderNet import LadderNet
+from Vessel_Seg.tmp_lib import *
 from torchvision import datasets, transforms
 import numpy as npp
 from torch.utils.data import DataLoader
@@ -43,8 +43,8 @@ class vessel_seg_model(nn.Module):
         '''
         receive a type data set and return an new dataset
         '''
-        img_height, img_width = data.shape[2], data.shape[3]
-        data_loader = self.preprocess(data)
+        img_height_orignal,img_width_orignal=data.shape[2],data.shape[3]
+        data_loader,img_height, img_width  = self.preprocess(data)
         preds = []
         for patch in data_loader:
             outputs = self.model(patch.to(self.device))
@@ -55,8 +55,8 @@ class vessel_seg_model(nn.Module):
 
         pred_imgs = self.recompone_overlap(
             pred_patches, img_height, img_width)
-        pred_imgs = pred_imgs[:, :, 0:img_height, 0:img_width]
-        return pred_imgs
+        pred_imgs = pred_imgs[:, :, 0:img_height_orignal, 0:img_width_orignal]
+        return torch.tensor(pred_imgs,dtype=torch.float)
 
     def preprocess(self, img):
         img = np.array(img)
@@ -66,43 +66,42 @@ class vessel_seg_model(nn.Module):
         imgs = adjust_gamma(imgs, 1.2)
         test_imgs = imgs/255
         test_imgs = self.paint_border_overlap(test_imgs)
+        test_imgs.shape[2],test_imgs.shape[3]
+        
         patches_imgs_test = self.extract_ordered_overlap(test_imgs)
         test_set = TestDataset(patches_imgs_test)
         test_loader = DataLoader(
             test_set, batch_size=64, shuffle=False, num_workers=3)
-        return test_loader
+        return test_loader,test_imgs.shape[2],test_imgs.shape[3]
 
     def paint_border_overlap(self,full_imgs):
-        assert (len(full_imgs.shape) == 4)  # 4D arrays
-        # check the channel is 1 or 3
-        assert (full_imgs.shape[1] == 1 or full_imgs.shape[1] == 3)
         img_h = full_imgs.shape[2]  # height of the image
         img_w = full_imgs.shape[3]  # width of the image
         leftover_h = (img_h-self.patch_height) % self.stride_height  # leftover on the h dim
         leftover_w = (img_w-self.patch_width) % self.stride_width  # leftover on the w dim
         if (leftover_h != 0):  # change dimension of img_h
-            print(
-                "\nthe side H is not compatible with the selected stride of " + str(self.stride_height))
-            print("(img_h - patch_h) MOD stride_h: " + str(leftover_h))
-            print("So the H dim will be padded with additional " +
-                  str(self.stride_height - leftover_h) + " pixels")
+            # print(
+            #     "\nthe side H is not compatible with the selected stride of " + str(self.stride_height))
+            # print("(img_h - patch_h) MOD stride_h: " + str(leftover_h))
+            # print("So the H dim will be padded with additional " +
+            #       str(self.stride_height - leftover_h) + " pixels")
             tmp_full_imgs = np.zeros(
                 (full_imgs.shape[0], full_imgs.shape[1], img_h+(self.stride_height-leftover_h), img_w))
             tmp_full_imgs[0:full_imgs.shape[0],
                           0:full_imgs.shape[1], 0:img_h, 0:img_w] = full_imgs
             full_imgs = tmp_full_imgs
         if (leftover_w != 0):  # change dimension of img_w
-            print(
-                "the side W is not compatible with the selected stride of " + str(self.stride_width))
-            print("(img_w - patch_w) MOD stride_w: " + str(leftover_w))
-            print("So the W dim will be padded with additional " +
-                  str(self.stride_width - leftover_w) + " pixels")
+            # print(
+            #     "the side W is not compatible with the selected stride of " + str(self.stride_width))
+            # print("(img_w - patch_w) MOD stride_w: " + str(leftover_w))
+            # print("So the W dim will be padded with additional " +
+            #       str(self.stride_width - leftover_w) + " pixels")
             tmp_full_imgs = np.zeros(
                 (full_imgs.shape[0], full_imgs.shape[1], full_imgs.shape[2], img_w+(self.stride_width - leftover_w)))
             tmp_full_imgs[0:full_imgs.shape[0], 0:full_imgs.shape[1],
                           0:full_imgs.shape[2], 0:img_w] = full_imgs
             full_imgs = tmp_full_imgs
-        print("new padded images shape: " + str(full_imgs.shape))
+        # print("new padded images shape: " + str(full_imgs.shape))
         return full_imgs
 
     def extract_ordered_overlap(self,full_imgs):
@@ -117,10 +116,10 @@ class vessel_seg_model(nn.Module):
         N_patches_img = ((img_h-self.patch_height)//self.stride_height+1) * \
             ((img_w-self.patch_width)//self.stride_width+1)
         N_patches_tot = N_patches_img*full_imgs.shape[0]
-        print("Number of patches on h : " + str(((img_h-self.patch_height)//self.stride_height+1)))
-        print("Number of patches on w : " + str(((img_w-self.patch_width)//self.stride_width+1)))
-        print("number of patches per image: " + str(N_patches_img) +
-              ", totally for testset: " + str(N_patches_tot))
+        # print("Number of patches on h : " + str(((img_h-self.patch_height)//self.stride_height+1)))
+        # print("Number of patches on w : " + str(((img_w-self.patch_width)//self.stride_width+1)))
+        # print("number of patches per image: " + str(N_patches_img) +
+        #       ", totally for testset: " + str(N_patches_tot))
         patches = np.empty(
             (N_patches_tot, full_imgs.shape[1], self.patch_height, self.patch_width))
         iter_tot = 0  # iter over the total number of patches (N_patches)
@@ -135,20 +134,16 @@ class vessel_seg_model(nn.Module):
 
     def recompone_overlap(self,preds, img_h, img_w):
 
-        assert (len(preds.shape) == 4)  # 4D arrays
-        assert (preds.shape[1] == 1 or preds.shape[1]
-                == 3)  # check the channel is 1 or 3
         patch_h = preds.shape[2]
         patch_w = preds.shape[3]
         N_patches_h = (img_h-patch_h)//self.stride_height+1
         N_patches_w = (img_w-patch_w)//self.stride_width+1
         N_patches_img = N_patches_h * N_patches_w
-        # print("N_patches_h: " + str(N_patches_h))
-        # print("N_patches_w: " + str(N_patches_w))
-        # print("N_patches_img: " + str(N_patches_img))
+
+        # print(preds.shape,N_patches_img)
         assert (preds.shape[0] % N_patches_img == 0)
         N_full_imgs = preds.shape[0]//N_patches_img
-        print("There are " + str(N_full_imgs) + " images in Testset")
+        # print("There are " + str(N_full_imgs) + " images in Testset")
         full_prob = np.zeros((N_full_imgs, preds.shape[1], img_h, img_w))
         full_sum = np.zeros((N_full_imgs, preds.shape[1], img_h, img_w))
 

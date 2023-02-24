@@ -3,9 +3,9 @@ from CNNs.inception_v3 import build_inception3_pretrained as build_model
 from dataloader import generate_test_data, generate_dataloader
 from train import train_process
 import torch.optim as optim
-from config import argparse
+from config import paser_args
 from Vessel_Seg.export import vessel_seg_model
-args = argparse()
+args = paser_args()
 print("Begin pretrain {}".format(args.pretrain))
 loss_func = torch.nn.CrossEntropyLoss()
 if args.GEN_DATA:
@@ -18,7 +18,7 @@ train_loader, val_loader, test_loader, train_len, val_len, test_len, num_class =
 model = build_model(num_classes=num_class,
                     pretrained=args.pretrain).cuda()  # todo model_setting
 Vessel_Seg_model = vessel_seg_model(patch_height=args.ves_patch_height,
-                                    patch_width=args.ves_patch_wideth,
+                                    patch_width=args.ves_patch_width,
                                     stride_height=args.ves_stride_height,
                                     stride_width=args.ves_stride_width)
 

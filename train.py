@@ -22,7 +22,7 @@ class train_process():
             for batch_x, batch_y in train_loader:
                 batch_x, batch_y = (batch_x).cuda(), (batch_y).cuda()
                 optimizer = optim.Adam(model.parameters(), lr=0.001)
-                batch_x=ves_model(batch_x)
+                batch_x=ves_model(batch_x.cpu()).repeat(1,3,1,1).cuda()
                 logits, aux = model(batch_x)
                 loss = self.loss_func(logits, batch_y) + \
                     self.loss_func(aux, batch_y)
@@ -49,8 +49,8 @@ class train_process():
                 label_val = []
                 for batch_x, batch_y in val_loader:
                     batch_x, batch_y = batch_x.cuda(), batch_y.cuda()
-                    batch_x=ves_model(batch_x)
-                    out = model(batch_x)
+                    batch_x=ves_model(batch_x.cpu()).repeat(1,3,1,1).cuda()
+                    out = model(batch_x.cuda())
                     loss = self.loss_func(out.cpu(), batch_y.cpu())
                     eval_loss += loss.data.item()
                     pred = torch.max(out, 1)[1]
@@ -70,7 +70,7 @@ class train_process():
                 if mean_loss_val<best_loss:
                     best_loss=mean_loss_val
                     torch.save(model.state_dict(), 'save_models/best.pt')
-                
+                # raise
         # test
         model.load_state_dict(torch.load('save_models/best.pt'))
         with torch.no_grad():
@@ -78,7 +78,7 @@ class train_process():
             label_test = []
             for batch_x, batch_y in test_loader:
                 batch_x, batch_y = batch_x.cuda(), batch_y.cuda()
-                batch_x=ves_model(batch_x)
+                batch_x=ves_model(batch_x.cpu()).repeat(1,3,1,1).cuda()
                 out = model(batch_x)
                 pred = torch.max(out, 1)[1]
                 pred_test.append(pred)
