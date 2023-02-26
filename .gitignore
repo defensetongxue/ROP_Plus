@@ -4,3 +4,4 @@ output/*
 *.ipynb
 VesselSeg_code/
 ring.py
+test_imge
