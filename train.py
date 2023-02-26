@@ -56,7 +56,7 @@ class train_process():
                     pred = torch.max(out, 1)[1]
                     pred_val.append(pred)
                     label_val.append(batch_y)
-
+                    raise
                 pred_val = torch.cat(pred_val, dim=0).cpu()
                 label_val = torch.cat(label_val, dim=0).cpu()
                 mean_loss_val = eval_loss/val_len

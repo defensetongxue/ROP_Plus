@@ -4,7 +4,7 @@ from dataloader import generate_test_data, generate_dataloader
 from train import train_process
 import torch.optim as optim
 from config import paser_args
-from Vessel_Seg.export import vessel_seg_model
+from Vessel_Seg.mytry import vessel_seg_model
 args = paser_args()
 print("Begin pretrain {}".format(args.pretrain))
 loss_func = torch.nn.CrossEntropyLoss()

@@ -1,14 +1,34 @@
 import torch
-from models.LadderNet import LadderNet
-from tmp_lib import *
-from torchvision import datasets, transforms
+from Vessel_Seg.models.LadderNet import LadderNet
+from Vessel_Seg.tmp_lib import *
+from torchvision import datasets, transforms,Dataset
 import numpy as npp
 from torch.utils.data import DataLoader
 import torch.nn as nn
 import albumentations
 import patchify 
 import torch.nn.functional as F
+import os 
+class CatsVsDogsDataset(Dataset):
+    def __init__(self, images_filepaths, transform=None):
+        self.images_filepaths = images_filepaths
+        self.transform = transform
 
+    def __len__(self):
+        return len(self.images_filepaths)
+
+    def __getitem__(self, idx):
+        image_filepath = self.images_filepaths[idx]
+        image = cv2.imread(image_filepath)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        if os.path.normpath(image_filepath).split(os.sep)[-2] == "Cat":
+            label = 1.0
+        else:
+            label = 0.0
+        if self.transform is not None:
+            image = self.transform(image=image)["image"]
+        return image, label
+    
 class vessel_seg_model(nn.Module):
     def __init__(self,patch_height,
                    patch_width,
@@ -62,14 +82,16 @@ class vessel_seg_model(nn.Module):
         return pred_imgs
 
     def preprocess(self, img):
+        patches_imgs = self.patch_embedding(img)
+
+        patches_imgs=np.array(patches_imgs)
         transforms = albumentations.Compose([
         albumentations.CLAHE(clip_limit=4.0, tile_grid_size=(4, 4), p=0.9),
         albumentations.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), 
         max_pixel_value=255.0, p=1.0),
         albumentations.ToGray()
         ])
-        img=transforms(img)
-        patches_imgs = self.patch_embedding(img)
+        img=transforms(image=img)
         patches_imgs = torch.tensor(patches_imgs)
         
         test_set = datasets(patches_imgs)
