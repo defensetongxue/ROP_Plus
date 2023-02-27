@@ -21,12 +21,21 @@ def generate_test_data(PATH="../autodl-tmp/", TEST_DATA=100):
         os.rename(os.path.join(target_path,file_name),os.path.join(target_path,new_name))
 
     def get_label(file_name: str):
-        if file_name.lstrip().startswith("ROP"):
+        '''
+        task: stage the rop,
+        1,2,3,4,5 as str is the stage rop
+        0 no-rop
+        '''
+        file_str=file_name.lstrip()
+        stage_list=["1","2","3","4","5"]
+        if file_str.startswith("ROP"):
             # pos_cnt=pos_cnt+1
-            return "ROP"
+            stage=(file_str[file_str.find("期")-1])
+            assert stage in stage_list,"unexpected ROP stage"
+            return stage
         else:
             # neg_cnt=neg_cnt+1
-            return "NO"
+            return "0"
 
     #clear original data in PATH/test
     os.system("rm -rf {}".format(os.path.join(PATH, 'test/*')))
