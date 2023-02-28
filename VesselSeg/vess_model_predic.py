@@ -42,7 +42,7 @@ class VesselSeg_process(nn.Module):
                 raise "don't have pretrain model in {}".format(
                     self.pretrain_path)
             return net
-
+    
     def forward(self, img):
         img_w, img_h = img.size
         patches, patch_number_h, patch_number_w = self.preprocess(img)
