@@ -14,8 +14,10 @@ class generate_data_processer():
         self.test_data=TEST_DATA
         self.preprocess=transforms
     def generate_test_data(self):
+        
         data_cnt = 0
         test_dic = os.path.join(self.PATH, "test")
+        os.system("rm -rf {}".format(os.path.join(self.PATH, "test","*")))
         for person_file in os.listdir(os.path.join(self.PATH, 'data')):
             eye_file_name = os.path.join(self.PATH, 'data', person_file)
             if not os.path.isdir(eye_file_name):
@@ -38,6 +40,8 @@ class generate_data_processer():
                     if data_cnt > self.test_data:
                         return 
                     label = self.get_label(file)
+                    if label==-1:
+                        continue
                     self.push_image(test_dic, file_dic, file, label,"{}.jpg".format(str(data_cnt)))
 
     def push_image(self,target_dic,file_dic, file_name, label,new_name):
@@ -46,30 +50,41 @@ class generate_data_processer():
             os.makedirs(target_path)
         shutil.copy(os.path.join(file_dic,file_name), target_path)
         os.rename(os.path.join(target_path,file_name),os.path.join(target_path,new_name))
-        if transforms is not None:
+        if self.preprocess is not None:
             img=Image.open(os.path.join(target_path,new_name))
             try :
-                img=transforms(img)
+                img=self.preprocess(img)
             except:
                 raise "generate_data_processer: transforms is not callabel"
             img.save(os.path.join(target_path,new_name))
-    def get_label(file_name: str):
+    def get_label(self,file_name: str):
         '''
         task: stage the rop,
         1,2,3,4,5 as str is the stage rop
         0 no-rop
+        6: 消退期
+        -1 待排
         '''
-        file_str=file_name.lstrip()
-        stage_list=["1","2","3","4","5"]
+        file_str=file_name.replace(" ","")
+
+        stage_list=["1","2","3","4","5","行","退"]
         if file_str.startswith("ROP"):
             # pos_cnt=pos_cnt+1
             stage=(file_str[file_str.find("期")-1])
-            assert stage in stage_list,"unexpected ROP stage"
+            if stage=='p':
+                print(file_name)
+                return -1
+            assert stage in stage_list,"unexpected ROP stage : {} in file {}".format(stage,file_str)
+            if stage=="行" or stage=="退":
+                return "6"
             return stage
         else:
             # neg_cnt=neg_cnt+1
             return "0"
-
+    def get_data_condition(self):
+        for sub_class in os.listdir(os.path.join(self.PATH,"test")):
+            sub_class_number=len(os.listdir(os.path.join(self.PATH,'test',sub_class)))
+            print("{} : {}".format(sub_class,sub_class_number))
 
 def generate_dataloader(PATH="../autodl-tmp", train_proportion=0.6, val_proportion=0.2 ,batch_size=64, shuffle=True):
     '''
@@ -85,7 +100,8 @@ def generate_dataloader(PATH="../autodl-tmp", train_proportion=0.6, val_proporti
 ])
     full_dataset = datasets.ImageFolder(os.path.join(
         PATH, "test"), transform=data_transfrom)  
-
+    
+    num_class = len(full_dataset.classes)
     data_size = len(full_dataset)
     train_size = int(data_size*train_proportion)
     val_size=int(data_size*val_proportion)
@@ -99,5 +115,5 @@ def generate_dataloader(PATH="../autodl-tmp", train_proportion=0.6, val_proporti
         val_dataset, batch_size=batch_size, shuffle=shuffle)
     test_dataloader = torch.utils.data.DataLoader(
         test_dataset, batch_size=batch_size, shuffle=shuffle)
-    num_class = len(full_dataset.classes)
+    print("the dataset has the classes: {}".format(full_dataset.classes))
     return train_dataloader,val_dataloader, test_dataloader, train_size,val_size, test_size, num_class
