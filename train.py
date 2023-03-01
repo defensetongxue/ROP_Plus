@@ -6,14 +6,16 @@ from sklearn.metrics import roc_auc_score
 
 
 class train_process():
-    def __init__(self, epoch, loss_func=nn.CrossEntropyLoss):
+    def __init__(self, epoch, loss_func=nn.CrossEntropyLoss,early_stop=1000):
         super(train_process, self).__init__()
         self.epoch = epoch
         self.loss_func = loss_func
+        self.early_stop=early_stop
 
-    def train(self, model,ves_model, train_loader, val_loader,test_loader, train_len, val_len,test_len,
-              optimizer=None, logging=False, ):
+    def train(self, model, train_loader, val_loader,test_loader, train_len, val_len,test_len,
+              optimizer=None, logging=False ):
         print("begin_trainning process")
+        patient=0
         for epoch in range(self.epoch):
             model.train()
             train_loss = 0
@@ -21,8 +23,6 @@ class train_process():
             label_train = []
             for batch_x, batch_y in train_loader:
                 batch_x, batch_y = (batch_x).cuda(), (batch_y).cuda()
-                optimizer = optim.Adam(model.parameters(), lr=0.001)
-                batch_x=ves_model(batch_x.cpu()).repeat(1,3,1,1).cuda()
                 logits, aux = model(batch_x)
                 loss = self.loss_func(logits, batch_y) + \
                     self.loss_func(aux, batch_y)
@@ -38,7 +38,7 @@ class train_process():
             label_train = torch.cat(label_train, dim=0)
             mean_loss_train = train_loss/train_len
             mean_accu_train = (pred_train == label_train).sum()/train_len
-            auc_train = roc_auc_score(pred_train.cpu(), label_train.cpu())
+            auc_train = roc_auc_score(pred_train.cpu(), label_train.cpu(),multi_class='ovo')
 
             # evaluation
             best_loss=1e10
@@ -49,7 +49,6 @@ class train_process():
                 label_val = []
                 for batch_x, batch_y in val_loader:
                     batch_x, batch_y = batch_x.cuda(), batch_y.cuda()
-                    batch_x=ves_model(batch_x.cpu()).repeat(1,3,1,1).cuda()
                     out = model(batch_x.cuda())
                     loss = self.loss_func(out.cpu(), batch_y.cpu())
                     eval_loss += loss.data.item()
@@ -67,9 +66,13 @@ class train_process():
                         epoch, mean_loss_train, mean_accu_train, auc_train) +
                         " Val: loss:{:.6f}, Acc:{:.6f}, Auc:{:.6f}".format(
                         mean_loss_val, mean_accu_val, auc_val))
+                patient+=1
                 if mean_loss_val<best_loss:
                     best_loss=mean_loss_val
+                    patient=0
                     torch.save(model.state_dict(), 'save_models/best.pt')
+                if patient>=self.early_stop:
+                    break    
                 # raise
         # test
         model.load_state_dict(torch.load('save_models/best.pt'))
@@ -78,7 +81,6 @@ class train_process():
             label_test = []
             for batch_x, batch_y in test_loader:
                 batch_x, batch_y = batch_x.cuda(), batch_y.cuda()
-                batch_x=ves_model(batch_x.cpu()).repeat(1,3,1,1).cuda()
                 out = model(batch_x)
                 pred = torch.max(out, 1)[1]
                 pred_test.append(pred)
