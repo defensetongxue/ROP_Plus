@@ -1,14 +1,11 @@
 
-1. change the code style in vessel segmentation model
-2. save the vessel data in dataset to accelerate the training
-
-    note : we need to do is build an another pipline, in the beginning we select the img that need to do the vessel detection (all in this term), and create a dataloader for orignal data.To do so, a new Datasets class is need.
-    in the classification task, we build a Dataset to change the dimension
-3. replace one channel rather than all in orignal data
-4. replace the classifier to fetch the need 
-5. replace the vessel segmentation model
-6. 
-
-### model Vess(LadderNet)+Class(inception_v3)
-setting: vess pretrained class pretrained
+### model Vas(LadderNet)+Class(inception_v3) binary
+setting: vasuclar pretrained class pretrained
     Test: acc:0.877310 auc:0.904614         
+
+I visualize the result of the vessel segmentation of our model and find that it doesn't effective as it work in training dataset. In detail, the training data and the data provided for our use have significant differences in color tone and vascular morphology. Also, the reflective noise on the images often gets misjudged as blood vessels with a high probability.
+
+### baseline pretrained(incep3) stage
+setting epoch 30 
+
+Test: acc:0.966920 auc:0.987690

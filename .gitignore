@@ -6,3 +6,4 @@ VesselSeg_code/
 ring.py
 test_imge
 tmp.py
+*.out

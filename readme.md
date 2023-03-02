@@ -2,8 +2,7 @@
 
 ## TODO:
 
-the implement has been determined: integrate the ./dataloader model with vesselmodel
-When generate a new data and place it image folder, 
-    read the image from the original data,
-    extract the vessel through VSMoudle
-    save in the imgae folder
+
+We are currently facing a significant problem where the vessel segmentation model does not seem to be effective. I propose that the issue could be due to the differences between the pre-trained data used and the data provided for classification.
+
+To address this issue, we could consider utilizing two potential methods: data augmentation (DA) or non-machine learning methods.

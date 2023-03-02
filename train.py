@@ -1,9 +1,7 @@
-import torch.optim as optim
 import torch.nn as nn
-from torch.autograd import Variable
 import torch
 from sklearn.metrics import roc_auc_score
-
+import  torch.nn.functional  as F
 
 class train_process():
     def __init__(self, epoch, loss_func=nn.CrossEntropyLoss,early_stop=1000):
@@ -21,25 +19,27 @@ class train_process():
             train_loss = 0
             pred_train = []
             label_train = []
+            score_train=[]
             for batch_x, batch_y in train_loader:
                 batch_x, batch_y = (batch_x).cuda(), (batch_y).cuda()
                 logits, aux = model(batch_x)
                 loss = self.loss_func(logits, batch_y) + \
                     self.loss_func(aux, batch_y)
                 pred = torch.max(logits, 1)[1]
+                score_train.append(logits)
                 pred_train.append(pred)
                 label_train.append(batch_y)
                 train_loss += loss.data.item()
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-
-            pred_train = torch.cat(pred_train, dim=0)
-            label_train = torch.cat(label_train, dim=0)
+            score_train=torch.cat(score_train,dim=0).cpu()
+            score_train=F.softmax(score_train,dim=-1)
+            pred_train = torch.cat(pred_train, dim=0).cpu()
+            label_train = torch.cat(label_train, dim=0).cpu()
             mean_loss_train = train_loss/train_len
             mean_accu_train = (pred_train == label_train).sum()/train_len
-            auc_train = roc_auc_score(pred_train.cpu(), label_train.cpu(),multi_class='ovo')
-
+            auc_train = roc_auc_score( label_train,score_train.detach(),multi_class='ovo')
             # evaluation
             best_loss=1e10
             model.eval()
@@ -47,20 +47,23 @@ class train_process():
                 eval_loss = 0
                 pred_val = []
                 label_val = []
+                score_val=[]
                 for batch_x, batch_y in val_loader:
                     batch_x, batch_y = batch_x.cuda(), batch_y.cuda()
                     out = model(batch_x.cuda())
                     loss = self.loss_func(out.cpu(), batch_y.cpu())
                     eval_loss += loss.data.item()
                     pred = torch.max(out, 1)[1]
+                    score_val.append(out)
                     pred_val.append(pred)
                     label_val.append(batch_y)
-                    raise
+                score_val=torch.cat(score_val,dim=0).cpu()
+                score_val=F.softmax(score_val,dim=-1)
                 pred_val = torch.cat(pred_val, dim=0).cpu()
                 label_val = torch.cat(label_val, dim=0).cpu()
                 mean_loss_val = eval_loss/val_len
                 mean_accu_val = (pred_val == label_val).sum()/val_len
-                auc_val = roc_auc_score(pred_val, label_val)
+                auc_val = roc_auc_score(label_val,score_val.detach(),multi_class='ovo')
                 if logging:
                     print("Epoch {} Train: loss:{:.6f}, Acc:{:.6f}, Auc:{:.6f}|".format(
                         epoch, mean_loss_train, mean_accu_train, auc_train) +
@@ -79,15 +82,18 @@ class train_process():
         with torch.no_grad():
             pred_test = []
             label_test = []
+            score_test=[]
             for batch_x, batch_y in test_loader:
                 batch_x, batch_y = batch_x.cuda(), batch_y.cuda()
                 out = model(batch_x)
                 pred = torch.max(out, 1)[1]
+                score_test.append(out)
                 pred_test.append(pred)
                 label_test.append(batch_y)
-
+            score_test=torch.cat(score_test,dim=0).cpu()
+            score_test=F.softmax(score_test,dim=-1)
             pred_test = torch.cat(pred_test, dim=0).cpu()
             label_test = torch.cat(label_test, dim=0).cpu()
             mean_accu_test = (pred_test == label_test).sum()/test_len
-            auc_test = roc_auc_score(pred_test, label_test)
+            auc_test = roc_auc_score( label_test,score_test.detach(),multi_class='ovo')
             print("Test: acc:{:.6f} auc:{:.6f}".format(mean_accu_test,auc_test))
