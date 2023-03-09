@@ -1,7 +1,8 @@
 from torchvision import models
 import os 
 import torch.nn as nn
-def build_inception3_pretrained(num_classes,downLoaded='./save_models',pretrained=True,print_opt_dic=False):
+def build_inception3_pretrained(num_classes,downLoaded='./save_models',
+            pretrained=True,print_opt_dic=False):
     os.environ['TORCH_HOME']=downLoaded
     model=models.inception_v3(pretrained=pretrained)
     model.fc=nn.Linear(2048,num_classes)

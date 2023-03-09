@@ -10,6 +10,8 @@ loss_func = torch.nn.CrossEntropyLoss()
 if args.GEN_DATA:
     data_processer=generate_data_processer(PATH=args.PATH, TEST_DATA=args.TEST_DATA)
     data_processer.generate_test_data()
+    data_processer.get_data_condition()
+    raise
 train_loader, val_loader, test_loader, train_len, val_len, test_len, num_class = generate_dataloader(PATH=args.PATH,
                                                                                                      train_proportion=args.train_proportion,
                                                                                                      val_proportion=args.val_proportion,
