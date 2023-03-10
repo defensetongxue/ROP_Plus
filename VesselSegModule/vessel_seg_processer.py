@@ -16,7 +16,13 @@ class VesselSegProcesser():
         self.model.load_state_dict(checkpoint['state_dict'])
         self.save_path = save_path
         self.reszie = resize
-        # self.mask=
+
+        # generate mask
+        mask=Image.open('res.png')
+        mask=transforms.Resize(self.reszie)(mask)
+        mask=transforms.ToTensor()(mask)[0] 
+        self.mask=mask
+
         self.transforms = transforms.Compose([
             transforms.Grayscale(1),
             transforms.ToTensor(),
@@ -37,6 +43,9 @@ class VesselSegProcesser():
         pre = transforms.functional.cop(0, 0, *self.resize)
         pre = pre[0, 0, ...]
         predict = torch.sigmoid(pre).cpu().detach().numpy()
+
+        # mask 
+        predict=torch.where(self.mask<0.1,self.mask,predict)
 
         # save the image
         file_name = os.path.basename(img_path)
