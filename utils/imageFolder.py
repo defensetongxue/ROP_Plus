@@ -55,6 +55,7 @@ class ImageFolder_ROP(data.Dataset):
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.4623,0.3856,0.2822],
                                      std=[0.2527,0.1889,0.1334])
+                                     # the mean and std is calculate by rop1 13 samples
             ])
 
 
