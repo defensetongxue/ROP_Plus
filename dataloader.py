@@ -39,7 +39,7 @@ class generate_data_processer():
                     data_cnt += 1
                     if data_cnt > self.test_data:
                         return 
-                    label = self.get_label(file)
+                    label = self.get_label(file,file_dic)
                     if label==-1:
                         continue
                     self.push_image(test_dic, file_dic, file, label,"{}.jpg".format(str(data_cnt)))
@@ -57,7 +57,7 @@ class generate_data_processer():
             except:
                 raise "generate_data_processer: transforms is not callabel"
             img.save(os.path.join(target_path,new_name))
-    def get_label(self,file_name: str):
+    def get_label(self,file_name: str,file_dir:str):
         '''
         task: stage the rop,
         1,2,3,4,5 as str is the stage rop
@@ -72,7 +72,7 @@ class generate_data_processer():
             # pos_cnt=pos_cnt+1
             stage=(file_str[file_str.find("期")-1])
             if stage=='p':
-                print(file_name)
+                print(os.path.join(file_dir,file_name))
                 return -1
             assert stage in stage_list,"unexpected ROP stage : {} in file {}".format(stage,file_str)
             if stage=="行" or stage=="退":
@@ -117,3 +117,11 @@ def generate_dataloader(PATH="../autodl-tmp", train_proportion=0.6, val_proporti
         test_dataset, batch_size=batch_size, shuffle=shuffle)
     print("the dataset has the classes: {}".format(full_dataset.classes))
     return train_dataloader,val_dataloader, test_dataloader, train_size,val_size, test_size, num_class
+
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('--PATH', type=str, default="../autodl-tmp/", help='Where the data is')
+parser.add_argument('--TEST_DATA', type=int, default=1e10, help='How many data will be used')
+args = parser.parse_args()
+data_processer=generate_data_processer(PATH=args.PATH, TEST_DATA=args.TEST_DATA)
+data_processer.generate_test_data()
