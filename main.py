@@ -17,18 +17,14 @@ train_loader, val_loader, test_loader, train_len, val_len, test_len, num_class =
                                                                                                      val_proportion=args.val_proportion,
                                                                                                      batch_size=args.batch_size)
 model = build_model(num_classes=num_class,
-                    pretrained=args.pretrain).cuda()  # todo model_setting
-# Vessel_Seg_model = vessel_seg_model(patch_height=args.ves_patch_height,
-#                                     patch_width=args.ves_patch_width,
-#                                     stride_height=args.ves_stride_height,
-#                                     stride_width=args.ves_stride_width)
+                    pretrained=args.pretrain).cuda()  #TODO model_setting
 
 train_processer = train_process(epoch=args.epoch, loss_func=loss_func,
                       early_stop=args.early_stop)
-optimizer = optim.Adam(model.parameters(), lr=args.lr)
+optimizer = optim.Adam(model.parameters(), lr=args.lr)#TODO lr decay
+print("data_size: train:{}, val:{}, test:{}".format(train_len, val_len, test_len))
 
 train_processer.train(model=model,
-                        # ves_model=Vessel_Seg_model,
                       train_loader=train_loader,
                       val_loader=val_loader,
                       test_loader=test_loader,
@@ -37,4 +33,3 @@ train_processer.train(model=model,
                       test_len=test_len,
                       optimizer=optimizer,
                       logging=True)
-print("data_size: train:{}, val:{}, test:{}".format(train_len, val_len, test_len))
