@@ -53,7 +53,8 @@ class ImageFolder_ROP(data.Dataset):
         self.transform=transforms.Compose([
                 transforms.Resize((512,512)),
                 transforms.ToTensor(),
-                transforms.Normalize()
+                transforms.Normalize(mean=[0.4623,0.3856,0.2822],
+                                     std=[0.2527,0.1889,0.1334])
             ])
 
 
