@@ -1,9 +1,9 @@
 import shutil
 import os
 import torch
-from torchvision import datasets, transforms
+from VesselSegModule import VesselSegProcesser
 from PIL import Image
-
+from utils import ImageFolder_ROP
 class generate_data_processer():
     def __init__(self,transforms=None ,PATH="../autodl-tmp/" ,TEST_DATA=100):
         '''
@@ -13,8 +13,11 @@ class generate_data_processer():
         self.PATH=PATH
         self.test_data=TEST_DATA
         self.preprocess=transforms
+        self.vessel_seg_processr=VesselSegProcesser(model_name='fr_unet',
+                                                  save_path=os.path.join(PATH,'vessel_res'),
+                                                  path='.',
+                                                  resize=(512,512))
     def generate_test_data(self):
-        
         data_cnt = 0
         test_dic = os.path.join(self.PATH, "test")
         os.system("rm -rf {}".format(os.path.join(self.PATH, "test","*")))
@@ -31,10 +34,13 @@ class generate_data_processer():
                     if not file.endswith(".jpg"):
                         continue # todo: there are some png img
                     try:
-                        Image.open(os.path.join(file_dic,file))
+                        image=Image.open(os.path.join(file_dic,file))
+                        
                     except:
                         print("{} can not open".format(os.path.join(file_dic,file)))
                         continue
+                    # generate vessel and saved
+                    self.vessel_seg_processr(image)
 
                     data_cnt += 1
                     if data_cnt > self.test_data:
@@ -92,13 +98,8 @@ def generate_dataloader(PATH="../autodl-tmp", train_proportion=0.6, val_proporti
     '''
     # test_proportion=1-train_proportion
 
-    data_transfrom = transforms.Compose([
-    transforms.Resize(299),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-])
-    full_dataset = datasets.ImageFolder(os.path.join(
-        PATH, "test"), transform=data_transfrom)  
+    full_dataset = ImageFolder_ROP(os.path.join(
+        PATH, "test"),vessel_path=os.path.join(PATH,'vessel_res'))  
     
     num_class = len(full_dataset.classes)
     data_size = len(full_dataset)
@@ -117,10 +118,11 @@ def generate_dataloader(PATH="../autodl-tmp", train_proportion=0.6, val_proporti
     print("the dataset has the classes: {}".format(full_dataset.classes))
     return train_dataloader,val_dataloader, test_dataloader, train_size,val_size, test_size, num_class
 
-import argparse
-parser = argparse.ArgumentParser()
-parser.add_argument('--PATH', type=str, default="../autodl-tmp/", help='Where the data is')
-parser.add_argument('--TEST_DATA', type=int, default=1e10, help='How many data will be used')
-args = parser.parse_args()
-data_processer=generate_data_processer(PATH=args.PATH, TEST_DATA=args.TEST_DATA)
-data_processer.generate_test_data()
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--PATH', type=str, default="../autodl-tmp/", help='Where the data is')
+    parser.add_argument('--TEST_DATA', type=int, default=1e10, help='How many data will be used')
+    args = parser.parse_args()
+    data_processer=generate_data_processer(PATH=args.PATH, TEST_DATA=args.TEST_DATA)
+    data_processer.generate_test_data()
