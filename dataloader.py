@@ -1,22 +1,17 @@
 import shutil
 import os
 import torch
-from VesselSegModule import VesselSegProcesser
 from PIL import Image
 from utils import ImageFolder_ROP
 class generate_data_processer():
-    def __init__(self,generate_vessel=True ,PATH="../autodl-tmp/" ,TEST_DATA=100):
+    def __init__(self,PATH="../autodl-tmp/" ,TEST_DATA=100):
         '''
         find the original data in "PATH/data" and generate test data in "PATH/test"
         '''
         super(generate_data_processer,self).__init__()
         self.PATH=PATH
         self.test_data=TEST_DATA
-        self.generate_vessel=generate_vessel
-        self.vessel_seg_processr=VesselSegProcesser(model_name='fr_unet',
-                                                  save_path=os.path.join(PATH,'vessel_res'),
-                                                  path='.',
-                                                  resize=(512,512))
+
     def generate_test_data(self):
         data_cnt = 0
         test_dic = os.path.join(self.PATH, "test")
@@ -42,7 +37,6 @@ class generate_data_processer():
                     # generate vessel and saved
                     if self.generate_vessel:
                         self.vessel_seg_processr(image)
-
                     data_cnt += 1
                     if data_cnt > self.test_data:
                         return 

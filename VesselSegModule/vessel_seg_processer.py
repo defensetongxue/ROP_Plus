@@ -9,10 +9,10 @@ import numpy as np
 
 
 class VesselSegProcesser():
-    def __init__(self, model_name, save_path, path, resize=(512, 512)) -> None:
+    def __init__(self, model_name, save_path,  resize=(512, 512)) -> None:
         self.model = getattr(models, model_name)
         checkpoint = torch.load(os.path.join(
-            path, 'VesselSegModule', 'checkpoint/best.pth'))
+            './VesselSegModule', 'checkpoint/best.pth'))
         self.model.load_state_dict(checkpoint['state_dict'])
         self.save_path = save_path
         self.reszie = resize
