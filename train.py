@@ -20,8 +20,9 @@ class train_process():
               logging=False):
         print("begin_trainning process")
         patient = 0
-        self.model.train()
+        best_loss = 1e10
         for epoch in range(self.epoch):
+            self.model.train()
             train_loss = 0
             pred_train = []
             label_train = []
@@ -41,9 +42,8 @@ class train_process():
             mean_accu_train = (pred_train == label_train).sum()/train_len
             auc_train = roc_auc_score(
                 label_train, score_train.detach(), multi_class='ovo')
-
+            # raise
             # evaluation
-            best_loss = 1e10
             self.model.eval()
             eval_loss = 0
             pred_val = []
@@ -51,6 +51,7 @@ class train_process():
             score_val = []
             for batch_x, batch_y in val_loader:
                 logits, loss, pred = self.val_epoch(batch_x, batch_y)
+                eval_loss += loss.data.item()
                 score_val.append(logits.cpu())
                 pred_val.append(pred.cpu())
                 label_val.append(batch_y.cpu())
@@ -78,12 +79,12 @@ class train_process():
         # test
         self.model.load_state_dict(
             torch.load(self.save_path))
-
+        self.model.eval()
         pred_test = []
         label_test = []
         score_test = []
         for batch_x, batch_y in test_loader:
-            logits, loss, pred = self.val_epoch(batch_x, batch_y)
+            logits, loss, pred = self.test_epoch(batch_x, batch_y)
             score_test.append(logits.cpu())
             pred_test.append(pred.cpu())
             label_test.append(batch_y.cpu())
@@ -114,15 +115,34 @@ class train_process():
             batch_x, batch_y = batch_x.cuda(), batch_y.cuda()
             logits = self.model(batch_x)
             loss = self.loss_func(logits.cpu(), batch_y.cpu())
-            eval_loss += loss.data.item()
             pred = torch.max(logits, 1)[1]
             return logits, loss, pred
 
-    def test_epoch(self):
+    def test_epoch(self,batch_x, batch_y):
         with torch.no_grad():
             batch_x, batch_y = batch_x.cuda(), batch_y.cuda()
             logits = self.model(batch_x)
             loss = self.loss_func(logits.cpu(), batch_y.cpu())
-            eval_loss += loss.data.item()
             pred = torch.max(logits, 1)[1]
             return logits, loss, pred
+    def test_only(self,test_loader,test_len):
+        self.model.load_state_dict(
+            torch.load(self.save_path))
+        self.model.eval()
+        pred_test = []
+        label_test = []
+        score_test = []
+        for batch_x, batch_y in test_loader:
+            logits, loss, pred = self.test_epoch(batch_x, batch_y)
+            score_test.append(logits.cpu())
+            pred_test.append(pred.cpu())
+            label_test.append(batch_y.cpu())
+
+        score_test = torch.cat(score_test, dim=0)
+        score_test = F.softmax(score_test, dim=-1)
+        pred_test = torch.cat(pred_test, dim=0)
+        label_test = torch.cat(label_test, dim=0)
+        mean_accu_test = (pred_test == label_test).sum()/test_len
+        auc_test = roc_auc_score(
+            label_test, score_test.detach(), multi_class='ovo')
+        print("Test: acc:{:.6f} auc:{:.6f}".format(mean_accu_test, auc_test))

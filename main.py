@@ -3,6 +3,7 @@ from CNNs.inception_v3 import build_inception3_pretrained as build_model
 from dataloader import generate_data_processer, generate_dataloader
 from train import train_process
 import torch.optim as optim
+from vessel_generater import generate_vessel
 from config import paser_args
 args = paser_args()
 print("Begin pretrain {}".format(args.pretrain))
@@ -13,7 +14,10 @@ if args.GEN_DATA:
                                              TEST_DATA=args.TEST_DATA)
     data_processer.generate_test_data()
     data_processer.get_data_condition()
-    raise
+if args.gen_vessel:
+    print("generate vessel segmentaion result")
+    generate_vessel(PATH=args.PATH)
+    print("finished")
 train_loader, val_loader, test_loader, train_len, val_len, test_len, num_class = generate_dataloader(PATH=args.PATH,
                                                                                                      train_proportion=args.train_proportion,
                                                                                                      val_proportion=args.val_proportion,

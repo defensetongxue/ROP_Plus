@@ -23,7 +23,7 @@ def make_dataset(dir, class_to_idx):
             continue
 
         for file_name in sorted(os.listdir(d)):
-            item = (os.path.join(d,file_name),file_name.spilt('.')[0], class_to_idx[target])  
+            item = (os.path.join(d,file_name),file_name.split('.')[0], class_to_idx[target])  
             images.append(item)
  
     return images
@@ -51,13 +51,17 @@ class ImageFolder_ROP(data.Dataset):
         self.classes = classes
         self.class_to_idx = class_to_idx
         self.transform=transforms.Compose([
-                transforms.Resize((512,512)),
+                transforms.Resize((300,300)),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.4623,0.3856,0.2822],
                                      std=[0.2527,0.1889,0.1334])
                                      # the mean and std is calculate by rop1 13 samples
             ])
-
+        self.vessel_transform=transforms.Compose([
+            transforms.Resize((300,300)),
+            transforms.ToTensor(),
+            lambda x:x[0]
+        ])
 
     def __getitem__(self, index):
         """
@@ -69,10 +73,12 @@ class ImageFolder_ROP(data.Dataset):
         path,file_name, target = self.imgs[index] 
         img = Image.open(path) 
         vessel=Image.open(os.path.join(self.vessel_path,
-                                            "{}_vs.png".format(file_name)))[0]
+                                            "{}_vs.png".format(file_name)))
+        
         if self.transform is not None:
             img = self.transform(img)
-
+        if self.vessel_transform is not None:
+            vessel=self.vessel_transform(vessel)
         img=replace_channel(img,vessel,2)
         return img, target
  
