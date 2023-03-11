@@ -17,7 +17,7 @@ def generate_vessel(PATH):
     the cat and dog classes, which is not allowed.
     
     '''
-    vessel_seg_processr=VesselSegProcesser(model_name='fr_unet',
+    vessel_seg_processr=VesselSegProcesser(model_name='FR_UNet',
                                             save_path=os.path.join(PATH,'vessel_res'),
                                             resize=(512,512))
     image_folder_dic=os.path.join(PATH,'test')
@@ -26,3 +26,5 @@ def generate_vessel(PATH):
         for file in os.listdir(class_dic):
             vessel_seg_processr(img_path=os.path.join(class_dic,file))
     return 
+if __name__=="__main__":
+    generate_vessel('../autodl-tmp/mini_dataset')
