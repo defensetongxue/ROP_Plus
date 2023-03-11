@@ -5,14 +5,14 @@ from VesselSegModule import VesselSegProcesser
 from PIL import Image
 from utils import ImageFolder_ROP
 class generate_data_processer():
-    def __init__(self,transforms=None ,PATH="../autodl-tmp/" ,TEST_DATA=100):
+    def __init__(self,generate_vessel=True ,PATH="../autodl-tmp/" ,TEST_DATA=100):
         '''
         find the original data in "PATH/data" and generate test data in "PATH/test"
         '''
         super(generate_data_processer,self).__init__()
         self.PATH=PATH
         self.test_data=TEST_DATA
-        self.preprocess=transforms
+        self.generate_vessel=generate_vessel
         self.vessel_seg_processr=VesselSegProcesser(model_name='fr_unet',
                                                   save_path=os.path.join(PATH,'vessel_res'),
                                                   path='.',
@@ -40,7 +40,8 @@ class generate_data_processer():
                         print("{} can not open".format(os.path.join(file_dic,file)))
                         continue
                     # generate vessel and saved
-                    self.vessel_seg_processr(image)
+                    if self.generate_vessel:
+                        self.vessel_seg_processr(image)
 
                     data_cnt += 1
                     if data_cnt > self.test_data:
@@ -56,13 +57,6 @@ class generate_data_processer():
             os.makedirs(target_path)
         shutil.copy(os.path.join(file_dic,file_name), target_path)
         os.rename(os.path.join(target_path,file_name),os.path.join(target_path,new_name))
-        if self.preprocess is not None:
-            img=Image.open(os.path.join(target_path,new_name))
-            try :
-                img=self.preprocess(img)
-            except:
-                raise "generate_data_processer: transforms is not callabel"
-            img.save(os.path.join(target_path,new_name))
     def get_label(self,file_name: str,file_dir:str):
         '''
         task: stage the rop,
