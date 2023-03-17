@@ -8,3 +8,10 @@ setting: non_pretrained param:default
 ### model Vess(LadderNet)+Class(inception_v3)
 setting: vess pretrained class pretrained
     Test: acc:0.877310 auc:0.904614
+
+### stage classification
+BaseLine
+    Test: acc:0.966920 auc:0.987690
+
+FR-UNet 
+    acc:0.933536 auc:0.984920

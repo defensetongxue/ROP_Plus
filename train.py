@@ -33,7 +33,7 @@ class train_process():
                 pred_train.append(pred.cpu())
                 label_train.append(batch_y.cpu())
                 train_loss += loss.data.item()
-
+            # raise
             score_train = torch.cat(score_train, dim=0)
             score_train = F.softmax(score_train, dim=-1)
             pred_train = torch.cat(pred_train, dim=0)
@@ -88,7 +88,7 @@ class train_process():
             score_test.append(logits.cpu())
             pred_test.append(pred.cpu())
             label_test.append(batch_y.cpu())
-
+        
         score_test = torch.cat(score_test, dim=0)
         score_test = F.softmax(score_test, dim=-1)
         pred_test = torch.cat(pred_test, dim=0)

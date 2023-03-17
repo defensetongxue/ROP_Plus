@@ -21,7 +21,6 @@ def make_dataset(dir, class_to_idx):
         d = os.path.join(dir, target)
         if not os.path.isdir(d):
             continue
-
         for file_name in sorted(os.listdir(d)):
             item = (os.path.join(d,file_name),file_name.split('.')[0], class_to_idx[target])  
             images.append(item)
@@ -38,15 +37,15 @@ class ImageFolder_ROP(data.Dataset):
     """
     """
     # 初始化，继承参数
-    def __init__(self, root,vessel_path):
+    def __init__(self, root):
 
-        classes, class_to_idx = find_classes(root)
-        imgs = make_dataset(root, class_to_idx)
+        classes, class_to_idx = find_classes(os.path.join(root,'test'))
+        imgs = make_dataset(os.path.join(root,'test'), class_to_idx)
         if len(imgs) == 0:
             raise(RuntimeError("Found 0 images in subfolders of: " + root ))
  
         self.root = root
-        self.vessel_path=vessel_path
+        self.vessel_path=os.path.join(root,'vessel_res')
         self.imgs = imgs
         self.classes = classes
         self.class_to_idx = class_to_idx
