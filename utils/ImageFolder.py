@@ -131,7 +131,6 @@ class ImageFolder_Grad(data.Dataset):
         import numpy as np
         img_orignal=transforms.Resize((300,300))(img_orignal)
         img_orignal=np.array(img_orignal,dtype=np.float32)/255
-        print(img_orignal.shape)
         return img,img_orignal, target
  
     def __len__(self):

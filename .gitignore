@@ -8,3 +8,4 @@ test_imge
 *.out
 .ipynb_checkpoints
 tmp.py
+Grad_save/
