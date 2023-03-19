@@ -43,7 +43,7 @@ class ImageFolder_ROP(data.Dataset):
         imgs = make_dataset(os.path.join(root,'test'), class_to_idx)
         if len(imgs) == 0:
             raise(RuntimeError("Found 0 images in subfolders of: " + root ))
- 
+
         self.root = root
         self.vessel_path=os.path.join(root,'vessel_res')
         self.imgs = imgs
@@ -61,7 +61,6 @@ class ImageFolder_ROP(data.Dataset):
             transforms.ToTensor(),
             lambda x:x[0]
         ])
-
     def __getitem__(self, index):
         """
         Args:
@@ -80,6 +79,60 @@ class ImageFolder_ROP(data.Dataset):
             vessel=self.vessel_transform(vessel)
         img=replace_channel(img,vessel,2)
         return img, target
+ 
+    def __len__(self):
+        return len(self.imgs)
+    
+class ImageFolder_Grad(data.Dataset):
+    """
+    """
+    # 初始化，继承参数
+    def __init__(self, root):
+
+        classes, class_to_idx = find_classes(os.path.join(root,'test'))
+        imgs = make_dataset(os.path.join(root,'test'), class_to_idx)
+        if len(imgs) == 0:
+            raise(RuntimeError("Found 0 images in subfolders of: " + root ))
+
+        self.root = root
+        self.vessel_path=os.path.join(root,'vessel_res')
+        self.imgs = imgs
+        self.classes = classes
+        self.class_to_idx = class_to_idx
+        self.transform=transforms.Compose([
+                transforms.Resize((300,300)),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.4623,0.3856,0.2822],
+                                     std=[0.2527,0.1889,0.1334])
+                                     # the mean and std is calculate by rop1 13 samples
+            ])
+        self.vessel_transform=transforms.Compose([
+            transforms.Resize((300,300)),
+            transforms.ToTensor(),
+            lambda x:x[0]
+        ])
+    def __getitem__(self, index):
+        """
+        Args:
+            index (int): Index
+        Returns:
+            tuple: (image, target) where target is class_index of the target class.
+        """
+        path,file_name, target = self.imgs[index] 
+        img_orignal = Image.open(path) 
+        vessel=Image.open(os.path.join(self.vessel_path,
+                                            "{}_vs.png".format(file_name)))
+        
+        if self.transform is not None:
+            img = self.transform(img_orignal)
+        if self.vessel_transform is not None:
+            vessel=self.vessel_transform(vessel)
+        img=replace_channel(img,vessel,2)
+        import numpy as np
+        img_orignal=transforms.Resize((300,300))(img_orignal)
+        img_orignal=np.array(img_orignal,dtype=np.float32)/255
+        print(img_orignal.shape)
+        return img,img_orignal, target
  
     def __len__(self):
         return len(self.imgs)
