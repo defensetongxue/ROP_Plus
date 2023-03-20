@@ -12,6 +12,7 @@ setting: vess pretrained class pretrained
 ### stage classification
 BaseLine
     Test: acc:0.966920 auc:0.987690
-
+    # update 2023/3/20
+    acc:0.971168 auc:0.993107
 FR-UNet 
     acc:0.933536 auc:0.984920
