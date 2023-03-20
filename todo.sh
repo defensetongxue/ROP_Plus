@@ -1,2 +1,2 @@
-python -u main.py  
+python -u train.py  
 python ring.py
