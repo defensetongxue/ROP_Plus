@@ -5,7 +5,7 @@ from PIL import Image
 from utils import ROP_Dataset
 import pickle 
 import numpy as np
-from .preprocess_hander import orignal_processer as preprocesser
+from .preprocess_hander import preprpcess_replace_channnel as preprocesser
 
     
 
@@ -86,8 +86,8 @@ class generate_data_processer():
             # neg_cnt=neg_cnt+1
             return "0"
     def get_data_condition(self):
-        for sub_class in os.listdir(os.path.join(self.PATH,"test")):
-            sub_class_number=len(os.listdir(os.path.join(self.PATH,'test',sub_class)))
+        for sub_class in os.listdir(os.path.join(self.data_file)):
+            sub_class_number=len(os.listdir(os.path.join(self.data_file,sub_class)))
             print("{} : {}".format(sub_class,sub_class_number))
 
 def generate_dataloader(PATH="../autodl-tmp/orignal", train_proportion=0.6, val_proportion=0.2 ,batch_size=64, shuffle=True):

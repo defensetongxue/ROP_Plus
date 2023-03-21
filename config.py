@@ -10,8 +10,8 @@ def paser_args():
     parser.add_argument('--PATH', type=str, default="../autodl-tmp/", help='Where the data is')
     parser.add_argument('--save_name', type=str, default="best.pth", help='where the model will be save')
 
-    parser.add_argument('--GEN_DATA', type=bool, default=True, help='if generate data again')
-    parser.add_argument('--data_file', type=str, default='original', help='which file of data')
+    parser.add_argument('--GEN_DATA', type=bool, default=False, help='if generate data again')
+    parser.add_argument('--data_file', type=str, default='replace_blue', help='which file of data')
     parser.add_argument('--TEST_DATA', type=int, default=1e10, help='How many data will be used')
 
     parser.add_argument('--train_proportion', type=float, default=0.6, help='What proportion of the training data is')

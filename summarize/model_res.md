@@ -69,6 +69,25 @@ data_transform=transforms.Compose([
 ```
 </details>
 
+    acc:0.929590 auc:0.981532
+<details><summary>模型参数</summary>
+
+```python
+data_transform=transforms.Compose([
+    transforms.Resize((300,300)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.4623,0.3856,0.2822],
+    std=[0.2527,0.1889,0.1334])
+    # the mean and std is calculate by rop1 13 samples
+    ])
+data_transform=transforms.Compose([
+    transforms.Resize((300,300)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.4623,0.3856,0.2822],
+    std=[0.2527,0.1889,0.1334])
+    # the mean and std is calculate by rop1 13 samples
+    ])
+```
 ## FR-UNet+inceptionV3 
 
     acc:0.933536 auc:0.984920 
@@ -102,6 +121,26 @@ train_transform=transforms.Compose([
             transforms.RandomHorizontalFlip(),
             transforms.RandomVerticalFlip(),
             ])
+vessel_transform={
+        transforms.Normalize([0.3968], [0.1980]),
+        resize=(300,300)
+    }
+data_transform=transforms.Compose([
+    transforms.Resize((300,300)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.4623,0.3856,0.2822],
+    std=[0.2527,0.1889,0.1334])
+    # the mean and std is calculate by rop1 13 samples
+    ])
+```
+</details>
+
+    acc:0.967830 auc:0.992916
+<summary>模型参数</summary>
+Note we do not set the mannual seed so this reasearch can not reimplement perfectly
+```python
+# replace the blue channel(img[2]) with vessel segmentation result
+train_transform=None
 vessel_transform={
         transforms.Normalize([0.3968], [0.1980]),
         resize=(300,300)
