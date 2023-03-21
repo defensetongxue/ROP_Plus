@@ -12,7 +12,8 @@ class ROP_Dataset(data.Dataset):
     # 初始化，继承参数
     def __init__(self, root,mode='train'):
 
-        self.class_dic=self._find_classes(root)
+        self.class_dic,self.classes=self._find_classes(root)
+        
         self.imgs=self._make_datasets(root)
         self.mode=mode
         self.transform=transforms.Compose([
@@ -30,6 +31,7 @@ class ROP_Dataset(data.Dataset):
         img_path,label=self.imgs[index]
         with open(img_path,'rb') as file:
             img=pickle.load(file)
+            img=torch.from_numpy(img).float()
         if self.mode=='train':
             img=self.transform(img)
         return img,label
@@ -39,6 +41,8 @@ class ROP_Dataset(data.Dataset):
         img_list=[]
         for target in os.listdir(root):
             target_path=os.path.join(root,target)
+            if not os.path.isdir(target_path):
+                continue
             for file in os.listdir(target_path):
                 img_list.append(
                     (os.path.join(target_path,file),# file path
@@ -48,7 +52,7 @@ class ROP_Dataset(data.Dataset):
         classes = [d for d in os.listdir(dir) if os.path.isdir(os.path.join(dir, d))]
         classes.sort()
         class_to_idx = {classes[i]: i for i in range(len(classes))}
-        return classes, class_to_idx
+        return class_to_idx,len(classes)
         # example class_to_idx :{'0': 0, '1': 1, '2': 2, '3': 3}
     
              

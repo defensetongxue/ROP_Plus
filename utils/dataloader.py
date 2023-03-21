@@ -3,49 +3,30 @@ import os
 import torch
 from PIL import Image
 from utils import ROP_Dataset
-from VesselSegModule import VesselSegProcesser
-from torchvision import transforms
 import pickle 
 import numpy as np
-class preprpcess():
-    def __init__(self) :
-        self.VS_processr=VesselSegProcesser(model_name='FR_UNet',
-                                            resize=(300,300))
-        self.transform=transforms.Compose([
-                transforms.Resize((300,300)),
-                transforms.ToTensor(),
-                transforms.Normalize(mean=[0.4623,0.3856,0.2822],
-                                     std=[0.2527,0.1889,0.1334])
-                                     # the mean and std is calculate by rop1 13 samples
-            ])
-        self.vessel_transform=transforms.Compose([
-            transforms.ToTensor(),
-            lambda x:x[0]
-        ])
-    def replace_channel(self,img,vessel,channel):
-        img[channel]=vessel
-        return img
+from .preprocess_hander import orignal_processer as preprocesser
 
-    def __call__(self,img) :
-        vessel=self.VS_processr(img)
-        vessel=self.vessel_transform(img)
-        img=self.transform(img)
-        return self.replace_channel(img,vessel,2)
     
 
 class generate_data_processer():
-    def __init__(self,PATH="../autodl-tmp/" ,TEST_DATA=100):
+    def __init__(self,PATH="../autodl-tmp/",data_file='orignal' ,TEST_DATA=100):
         '''
-        find the original data in "PATH/data" and generate test data in "PATH/test"
+        find the original data in "PATH/data" and generate test data in "PATH/{data_file}"
         '''
         super(generate_data_processer,self).__init__()
         self.PATH=PATH
         self.test_data=TEST_DATA
-        self.preprocess=preprpcess()
+        self.data_file=os.path.join(self.PATH,data_file)
+        self.preprocess=preprocesser()
     def generate_test_data(self):
+        print("generate data Beginning...")
         data_cnt = 0
-        test_dic = os.path.join(self.PATH, "test")
-        os.system("rm -rf {}".format(os.path.join(self.PATH, "test","*")))
+        # remove the exit test data in PATH
+        if not os.path.exists(self.data_file):
+            os.mkdir(self.data_file)
+        os.system("rm -rf {}".format(os.path.join(self.data_file, "*")))
+
         for person_file in os.listdir(os.path.join(self.PATH, 'data')):
             eye_file_name = os.path.join(self.PATH, 'data', person_file)
             if not os.path.isdir(eye_file_name):
@@ -71,7 +52,7 @@ class generate_data_processer():
                     label = self.get_label(file,file_dic)
                     if label==-1:
                         continue
-                    self.push_image(test_dic,image, label,"{}.pkl=".format(str(data_cnt)))
+                    self.push_image(self.data_file,image, label,"{}.pkl=".format(str(data_cnt)))
 
     def push_image(self,target_dic,img, label,new_name):
         target_path = os.path.join(target_dic, label)
@@ -109,7 +90,7 @@ class generate_data_processer():
             sub_class_number=len(os.listdir(os.path.join(self.PATH,'test',sub_class)))
             print("{} : {}".format(sub_class,sub_class_number))
 
-def generate_dataloader(PATH="../autodl-tmp", train_proportion=0.6, val_proportion=0.2 ,batch_size=64, shuffle=True):
+def generate_dataloader(PATH="../autodl-tmp/orignal", train_proportion=0.6, val_proportion=0.2 ,batch_size=64, shuffle=True):
     '''
     generate train and test data in "pytorch.dataloader" format.
     '''
