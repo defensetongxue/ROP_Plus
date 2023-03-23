@@ -29,6 +29,8 @@ class generate_data_processer():
 
         for person_file in os.listdir(os.path.join(self.PATH, 'data')):
             eye_file_name = os.path.join(self.PATH, 'data', person_file)
+            person_state=False # False: normal True: ROP 
+            act_squeence=[]
             if not os.path.isdir(eye_file_name):
                 continue
             for eye_file in os.listdir(eye_file_name):
@@ -50,10 +52,24 @@ class generate_data_processer():
                     if data_cnt > self.test_data:
                         return 
                     label = self.get_label(file,file_dic)
+
                     if label==-1:
                         continue
-                    self.push_image(self.data_file,image, label,"{}.pkl=".format(str(data_cnt)))
+                    if label>0: # that person is a ROP infants
+                        person_state=True
+                        # push that ROP image as positive sample
+                        self.push_image(self.data_file,image, label,"{}.pkl=".format(str(data_cnt)))
+                    else:
+                        # else push the act into a list
+                        # if the infant is non-ROP 
+                        # push all the images as negtive samples
+                        act_squeence.append((self.data_file,image, label,"{}.pkl=".format(str(data_cnt))))
 
+                    # self.push_image(self.data_file,image, label,"{}.pkl=".format(str(data_cnt)))
+            if not person_state:
+                # if there is no ROP in the infants
+                for args in act_squeence:
+                    self.push_image(*args)
     def push_image(self,target_dic,img, label,new_name):
         target_path = os.path.join(target_dic, label)
         if not os.path.exists(target_path):
