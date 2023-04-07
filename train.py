@@ -1,6 +1,6 @@
 import torch
 from CNNs.inception_v3 import build_inception3_pretrained as build_model
-from utils import generate_data_processer, generate_dataloader, train_process
+from utils import generate_dataloader, train_process
 import torch.optim as optim
 from config import paser_args
 import os
@@ -11,11 +11,6 @@ loss_func = torch.nn.CrossEntropyLoss()
 data_file_path=os.path.join(args.PATH,args.data_file)
 if not args.GEN_DATA and not os.path.isdir(data_file_path):
     raise "you have not generate data"
-if args.GEN_DATA:
-    data_processer = generate_data_processer(PATH=args.PATH,data_file=args.data_file,
-                                             TEST_DATA=args.TEST_DATA)
-    data_processer.generate_test_data()
-    data_processer.get_data_condition()
 
 dataloaders, data_auguments, num_class = generate_dataloader(PATH=data_file_path,
                                                              train_proportion=args.train_proportion,

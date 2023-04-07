@@ -106,7 +106,10 @@ class generate_data_processer():
             sub_class_number=len(os.listdir(os.path.join(self.data_file,sub_class)))
             print("{} : {}".format(sub_class,sub_class_number))
 
-def generate_dataloader(PATH="../autodl-tmp/orignal", train_proportion=0.6, val_proportion=0.2 ,batch_size=64, shuffle=True):
+def generate_dataloader(PATH="../autodl-tmp/orignal"
+                        , train_proportion=0.6, val_proportion=0.2 ,
+                        batch_size=64,
+                        shuffle=True):
     '''
     generate train and test data in "pytorch.dataloader" format.
     '''
