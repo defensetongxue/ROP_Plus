@@ -8,9 +8,10 @@ import os
 args = paser_args()
 loss_func = torch.nn.CrossEntropyLoss()
 data_file_path=os.path.join(args.PATH,args.data_file)
-if not args.GEN_DATA and not os.path.isdir(data_file_path):
+if  not os.path.isdir(data_file_path):
     raise "you have not generate data"
 
+print("Using data that {}".format(args.data_file))
 dataloaders, data_auguments, num_class = generate_dataloader(PATH=data_file_path,
                                                              train_proportion=args.train_proportion,
                                                              val_proportion=args.val_proportion,

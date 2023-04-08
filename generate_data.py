@@ -1,6 +1,5 @@
 from utils_ import generate_data_processer
 from config import paser_args
-import os
 
 args = paser_args()
 data_processer = generate_data_processer(PATH=args.PATH,data_file=args.data_file)

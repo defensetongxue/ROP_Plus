@@ -10,7 +10,7 @@ def paser_args():
     parser.add_argument('--PATH', type=str, default="../autodl-tmp/", help='Where the data is')
     parser.add_argument('--save_name', type=str, default="best.pth", help='where the model will be save')
 
-    parser.add_argument('--data_file', type=str, default='replace_blue', help='which file of data')
+    parser.add_argument('--data_file', type=str, default='original', help='which file of data')
 
     parser.add_argument('--train_proportion', type=float, default=0.6, help='What proportion of the training data is')
     parser.add_argument('--val_proportion', type=float, default=0.2, help='What proportion of the validation data is')
@@ -19,6 +19,6 @@ def paser_args():
     parser.add_argument('--epoch', type=int, default=30 ,help='epoch when triaing')
     parser.add_argument('--lr', type=float, default=1e-3 ,help='learning rate')
     parser.add_argument('--early_stop', type=int, default=10, help='patient')
-    
+
     args = parser.parse_args()
     return args
