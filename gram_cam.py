@@ -14,7 +14,7 @@ def generate_Gram_CAM(model,target_layer,input_tensor,img_numpy,save_name):
 
 if __name__=="__main__":
     from CNNs import build_inception3_pretrained as build_model
-    from utils import ImageFolder_Grad
+    from utils_ import ImageFolder_Grad
     import torch
     from torch.utils.data import DataLoader
     import numpy as np

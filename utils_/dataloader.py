@@ -2,12 +2,11 @@ from torch.utils.data import Dataset
 import os
 import torch
 from PIL import Image
-from utils import ROP_Dataset
+from utils_ import ROP_Dataset
 import pickle 
 import numpy as np
-from .preprocess_hander import preprpcess_replace_channnel as preprocesser
-
-    
+from .function_ import get_instance
+from utils_ import preprocess_hander
 
 class generate_data_processer():
     def __init__(self,PATH="../autodl-tmp/",data_file='orignal' ,TEST_DATA=100):
@@ -18,7 +17,7 @@ class generate_data_processer():
         self.PATH=PATH
         self.test_data=TEST_DATA
         self.data_file=os.path.join(self.PATH,data_file)
-        self.preprocess=preprocesser()
+        self.preprocess=get_instance(preprocess_hander,data_file)
     def generate_test_data(self):
         print("generate data Beginning...")
         data_cnt = 0
@@ -55,15 +54,19 @@ class generate_data_processer():
 
                     if label==-1:
                         continue
-                    if label>0: # that person is a ROP infants
+                    if not label=="0": # that person is a ROP infants
                         person_state=True
                         # push that ROP image as positive sample
-                        self.push_image(self.data_file,image, label,"{}.pkl=".format(str(data_cnt)))
+                        self.push_image(
+                            self.data_file,image,
+                            label,"{}.pkl=".format(str(data_cnt)))
                     else:
                         # else push the act into a list
                         # if the infant is non-ROP 
                         # push all the images as negtive samples
-                        act_squeence.append((self.data_file,image, label,"{}.pkl=".format(str(data_cnt))))
+                        act_squeence.append(
+                            (self.data_file,image,
+                            label,"{}.pkl=".format(str(data_cnt))))
 
                     # self.push_image(self.data_file,image, label,"{}.pkl=".format(str(data_cnt)))
             if not person_state:
@@ -74,7 +77,6 @@ class generate_data_processer():
         target_path = os.path.join(target_dic, label)
         if not os.path.exists(target_path):
             os.makedirs(target_path)
-        # cv2.imwrite(os.path.join(target_path,new_name),img)
         with open(file=os.path.join(target_path,new_name),mode='wb') as file:
             pickle.dump(np.array(img), file)
     def get_label(self,file_name: str,file_dir:str):
@@ -91,7 +93,7 @@ class generate_data_processer():
         if file_str.startswith("ROP"):
             # pos_cnt=pos_cnt+1
             stage=(file_str[file_str.find("期")-1])
-            if stage=='p':
+            if stage=='p': # 没有期字
                 print(os.path.join(file_dir,file_name))
                 return -1
             assert stage in stage_list,"unexpected ROP stage : {} in file {}".format(stage,file_str)
