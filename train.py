@@ -6,7 +6,6 @@ from config import paser_args
 import os
 
 args = paser_args()
-print("Begin pretrain {}".format(args.pretrain))
 loss_func = torch.nn.CrossEntropyLoss()
 data_file_path=os.path.join(args.PATH,args.data_file)
 if not args.GEN_DATA and not os.path.isdir(data_file_path):
@@ -19,8 +18,7 @@ dataloaders, data_auguments, num_class = generate_dataloader(PATH=data_file_path
 train_loader, val_loader, test_loader = dataloaders
 train_len, val_len, test_len = data_auguments
 
-model = build_model(num_classes=num_class,
-                    pretrained=args.pretrain)  # TODO model_setting
+model = build_model(num_classes=num_class)  # TODO model_setting
 optimizer = optim.Adam(model.parameters(), lr=args.lr)  # TODO lr decay
 
 train_processer = train_process(model=model, optimizer=optimizer,

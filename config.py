@@ -18,10 +18,7 @@ def paser_args():
     parser.add_argument('--batch_size', type=int, default=128 ,help='batch size')
     parser.add_argument('--epoch', type=int, default=30 ,help='epoch when triaing')
     parser.add_argument('--lr', type=float, default=1e-3 ,help='learning rate')
-    parser.add_argument('--early_stop', type=int, default=5, help='patient')
-
-
-    parser.add_argument('--pretrain', type=bool, default=True, help='if load the pretrain model')
-
+    parser.add_argument('--early_stop', type=int, default=10, help='patient')
+    
     args = parser.parse_args()
     return args
