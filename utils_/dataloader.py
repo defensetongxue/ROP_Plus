@@ -9,13 +9,12 @@ from .function_ import get_instance
 from utils_ import preprocess_hander
 
 class generate_data_processer():
-    def __init__(self,PATH="../autodl-tmp/",data_file='orignal' ,TEST_DATA=100):
+    def __init__(self,PATH="../autodl-tmp/",data_file='orignal'):
         '''
         find the original data in "PATH/data" and generate test data in "PATH/{data_file}"
         '''
         super(generate_data_processer,self).__init__()
         self.PATH=PATH
-        self.test_data=TEST_DATA
         self.data_file=os.path.join(self.PATH,data_file)
         self.preprocess=get_instance(preprocess_hander,data_file)
     def generate_test_data(self):
@@ -48,8 +47,6 @@ class generate_data_processer():
                     # generate vessel and saved
                     image=self.preprocess(image)
                     data_cnt += 1
-                    if data_cnt > self.test_data:
-                        return 
                     label = self.get_label(file,file_dic)
 
                     if label==-1:
@@ -142,7 +139,6 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--PATH', type=str, default="../autodl-tmp/", help='Where the data is')
-    parser.add_argument('--TEST_DATA', type=int, default=1e10, help='How many data will be used')
     args = parser.parse_args()
-    data_processer=generate_data_processer(PATH=args.PATH, TEST_DATA=args.TEST_DATA)
+    data_processer=generate_data_processer(PATH=args.PATH)
     data_processer.generate_test_data()
