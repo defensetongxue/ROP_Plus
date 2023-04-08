@@ -61,15 +61,19 @@ class generate_data_processer():
                         # else push the act into a list
                         # if the infant is non-ROP 
                         # push all the images as negtive samples
-                        act_squeence.append(
-                            (self.data_file,image,
-                            label,"{}.pkl=".format(str(data_cnt))))
+
+                        # act_squeence.append(
+                        #     (self.data_file,image,
+                        #     label,"{}.pkl=".format(str(data_cnt))))
+                        self.push_image(
+                            self.data_file,image,
+                            label,"{}.pkl=".format(str(data_cnt)))
 
                     # self.push_image(self.data_file,image, label,"{}.pkl=".format(str(data_cnt)))
-            if not person_state:
-                # if there is no ROP in the infants
-                for args in act_squeence:
-                    self.push_image(*args)
+            # if not person_state:
+            #     # if there is no ROP in the infants
+            #     for args in act_squeence:
+            #         self.push_image(*args)
     def push_image(self,target_dic,img, label,new_name):
         target_path = os.path.join(target_dic, label)
         if not os.path.exists(target_path):
