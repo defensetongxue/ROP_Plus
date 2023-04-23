@@ -11,7 +11,25 @@ from utils_ import preprocess_hander
 class generate_data_processer():
     def __init__(self,PATH="../autodl-tmp/",data_file='orignal'):
         '''
-        find the original data in "PATH/data" and generate test data in "PATH/{data_file}"
+        find the original data in "PATH/data_original" and generate dataset in the style:
+        -data
+        --images
+        --- 001.jpg
+        --- 002.jpg
+        --- ...
+        --annotations
+        ---train.json
+        ---valid.json
+        ---test.json
+        The json format is
+        {
+            "id": <image id> : number,
+            "image_name": <image_name> : str,
+            "image_name_original": <image_name original> : str,
+            "image_path": <image_path> : str,
+            "image_path_original": <image_path in original dictionary> : str,
+            "class": <class> : number
+        }
         '''
         super(generate_data_processer,self).__init__()
         self.PATH=PATH

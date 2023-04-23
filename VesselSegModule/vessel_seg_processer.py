@@ -10,20 +10,14 @@ import numpy as np
 
 class VesselSegProcesser():
     def __init__(self, model_name,
-                 resize=(512, 512),
-                 save_img=False,
-                 save_path=None):
+                 resize=(512, 512)):
         self.model = getattr(models, model_name)()
-        checkpoint = torch.load(os.path.join(
-            './VesselSegModule', 'checkpoint/best.pth'))
+        checkpoint = torch.load(
+            './VesselSegModule/checkpoint/best.pth')
         self.model.load_state_dict(checkpoint['state_dict'])
         self.model.cuda()
 
-        self.save_path = save_path
-        if save_img and not os.path.exists(save_path):
-            os.mkdir(save_path)
         self.resize = resize
-        self.save_img = save_img
         # generate mask
         mask = Image.open('./VesselSegModule/mask.png')
         mask = transforms.Resize(self.resize)(mask)
@@ -39,7 +33,7 @@ class VesselSegProcesser():
             # TODO using more precise score
         ])
 
-    def __call__(self, img):
+    def __call__(self, img,save_path=None):
         # open the image and preprocess
         # img = Image.open(img_path)
         img = self.transforms(img)
@@ -55,11 +49,7 @@ class VesselSegProcesser():
         predict = torch.sigmoid(pre).cpu().detach()
         # mask
         predict = torch.where(self.mask < 0.1, self.mask, predict)
-        if self.save_img:
-            #save the image
-            # file_name = os.path.basename(img_path)
-            file_name = file_name.split('.')[0]
-            cv2.imwrite(
-                os.path.join(self.save_path, "{}_vs.png".format(file_name)),
+        if save_path:
+            cv2.imwrite(save_path,
                 np.uint8(predict.numpy()*255))
         return predict.numpy()

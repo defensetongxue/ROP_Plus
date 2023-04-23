@@ -4,10 +4,19 @@ datafile_list
 orignal
 replace_blue
 '''
-def paser_args():
+def get_config():
     
     parser = argparse.ArgumentParser()
-    parser.add_argument('--PATH', type=str, default="../autodl-tmp/", help='Where the data is')
+    # cleansing
+    parser.add_argument('--path_src', type=str, default="../autodl-tmp/data_original", help='Where the data is')
+    parser.add_argument('--path_tar', type=str, default="../autodl-tmp/dataset_ROP", help='Where the data generate')
+    parser.add_argument('--train_split', type=float, default=0.7, help='training data proportion')
+    parser.add_argument('--val_split', type=float, default=0.1, help='valid data proportion')
+
+    parser.add_argument('--cleansing', type=bool, default=True, help='if parse orginal data')
+    parser.add_argument('--vessel', type=bool, default=True, help='if generate vessel segmentation result')
+    parser.add_argument('--optic_disc', type=bool, default=True, help='if doing optic disc detection')
+
     parser.add_argument('--save_name', type=str, default="best.pth", help='where the model will be save')
 
     parser.add_argument('--data_file', type=str, default='original', help='which file of data')
