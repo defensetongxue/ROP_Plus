@@ -1,7 +1,7 @@
 import os
 from .optic_disc_detect_processer import OpticDetProcesser
 from PIL import Image
-def generate_vessel_result(data_path='./data'):
+def generate_OpticDetect_result(data_path='./data'):
     '''
     This funtion should be exited after the data cleasning. 
     └───data

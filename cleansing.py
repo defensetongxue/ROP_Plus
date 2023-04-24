@@ -5,6 +5,7 @@ import numpy as np
 import shutil
 import json
 from VesselSegModule import generate_vessel_result
+from OpticDetectModule import generate_OpticDetect_result
 from config import get_config
 class generate_data_processer():
     def __init__(self,src_path="../autodl-tmp/data_original",
@@ -262,4 +263,4 @@ if __name__ == '__main__':
             raise ValueError(
                 "You should cleansing the data before generate optic disc coordinates")
         else:
-            raise NotImplementedError("have not implement the interface, Coming")
+            generate_OpticDetect_result(data_path='./data')

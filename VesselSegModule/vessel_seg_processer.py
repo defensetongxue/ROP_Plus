@@ -1,7 +1,6 @@
 # this file will create an interface for the rop_dig
 from . import models
 import torch
-import os
 from PIL import Image
 import torchvision.transforms as transforms
 import cv2

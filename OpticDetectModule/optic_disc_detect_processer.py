@@ -8,7 +8,7 @@ import numpy as np
 import yaml
 
 class OpticDetProcesser():
-    def __init__(self):
+    def __init__(self,threshold=0.02):
         with open('./', 'r') as file:
             config = yaml.safe_load(file)
         self.model = HRNet(config)
@@ -27,6 +27,7 @@ class OpticDetProcesser():
             # the mean and std is cal by 12 rop1 samples
             # TODO using more precise score
         ])
+        self.threshold=threshold
 
     def __call__(self, img,save_path=None):
         # open the image and preprocess
@@ -40,6 +41,7 @@ class OpticDetProcesser():
         output = self.model(img.cuda())
         # the input of the 512 is to match the mini-size of vessel model
         score_map = output.data.cpu()
+        prescence=(float(torch.max(score_map.flatten()))>self.shreshold)
         preds = decode_preds(score_map)
         preds=preds.squeeze()
         print(preds.shape)
@@ -47,7 +49,8 @@ class OpticDetProcesser():
 
         if save_path:
             with open(save_path,'w') as f:
-                f.write(f"{int(preds[0])} {int(preds[1])}\n")
+                if prescence:
+                    f.write(f"{int(preds[0])} {int(preds[1])}\n")
         return preds
 
 def get_preds(scores):
