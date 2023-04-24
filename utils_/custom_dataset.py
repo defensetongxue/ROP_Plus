@@ -75,7 +75,24 @@ class ROP_Dataset(data.Dataset):
         meta['image_path']=image_path
 
         return img,label,meta
-
+    
+    def get_rare(self, threshold=0.2):
+        # Count the number of samples per class
+        class_counts = {}
+        for annot in self.annotations:
+            cls = annot['class']
+            if cls not in class_counts:
+                class_counts[cls] = 0
+            class_counts[cls] += 1
+        
+        # Calculate the proportions of each class
+        total_samples = len(self.annotations)
+        class_proportions = {cls: count / total_samples for cls, count in class_counts.items()}
+        
+        # Find the rare classes whose proportions are less than the threshold
+        rare_classes = [cls for cls, proportion in class_proportions.items() if proportion < threshold]
+        
+        return rare_classes
 
 
 class Fix_RandomRotation:
@@ -104,3 +121,33 @@ class Fix_RandomRotation:
             img, angle, transforms.functional.InterpolationMode.NEAREST, 
             expand=self.expand, center=self.center)
         return img
+    
+class ROP_AugmentedDataset(data.Dataset):
+    def __init__(self, original_dataset, class_indices, class_augmentation_factors):
+        self.original_dataset = original_dataset
+        self.class_indices = class_indices
+        self.class_augmentation_factors = class_augmentation_factors
+        self.augument_transform=transforms.Compose([
+            transforms.RandomRotation(60),
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomVerticalFlip()
+        ])
+    def __getitem__(self, index):
+        class_idx = index % len(self.class_indices)
+        sample_idx = index // len(self.class_indices)
+        idx = self.class_indices[class_idx][
+            sample_idx % len(self.class_indices[class_idx])]
+        img, label, meta = self.original_dataset[idx]
+
+        # Apply random rotation and flipping
+        img = self.augument_transform(img)
+
+        return img, label, meta
+
+    def __len__(self):
+        return sum(len(indices) * factor for indices, factor in zip(self.class_indices, self.class_augmentation_factors))
+
+def get_factor(dataset, cls, target_samples):
+    class_count = sum(1 for annot in dataset.annotations if annot['class'] == cls)
+    factor = max(target_samples // class_count - 1, 0)
+    return factor
