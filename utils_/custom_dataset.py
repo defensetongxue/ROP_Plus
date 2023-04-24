@@ -93,7 +93,10 @@ class ROP_Dataset(data.Dataset):
         rare_classes = [cls for cls, proportion in class_proportions.items() if proportion < threshold]
         
         return rare_classes
-
+    
+    def num_classes(self):
+        unique_classes = set(annot['class'] for annot in self.annotations)
+        return len(unique_classes)
 
 class Fix_RandomRotation:
     def __init__(self, degrees=360, resample=False, expand=False, center=None):
