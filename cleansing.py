@@ -243,7 +243,7 @@ class generate_data_processer():
 
 if __name__ == '__main__':
     # Init the args
-    args = get_config()
+    args,_ = get_config()
     if args.cleansing:
         cleansing_processer=generate_data_processer(src_path=args.path_src,
                                                     tar_path=args.path_tar,

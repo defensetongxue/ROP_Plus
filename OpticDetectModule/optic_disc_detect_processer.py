@@ -9,7 +9,7 @@ import yaml
 
 class OpticDetProcesser():
     def __init__(self,threshold=0.02):
-        with open('./', 'r') as file:
+        with open('./OpticDetectModule/models/hrnet.yaml', 'r') as file:
             config = yaml.safe_load(file)
         self.model = HRNet(config)
         checkpoint = torch.load(
