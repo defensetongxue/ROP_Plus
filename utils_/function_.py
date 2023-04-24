@@ -1,6 +1,8 @@
 import inspect
 import torch
 from torch import optim
+import numpy as np
+from sklearn.metrics import roc_auc_score, accuracy_score
 
 def get_instance(module, class_name, *args, **kwargs):
     try:
@@ -61,9 +63,11 @@ def train_epoch(model, optimizer, train_loader, loss_function, device):
 def val_epoch(model, val_loader, loss_function, device):
     model.eval()
     running_loss = 0.0
+    all_targets = []
+    all_outputs = []
 
     with torch.no_grad():
-        for inputs, targets,meta in val_loader:
+        for inputs, targets, meta in val_loader:
             inputs = inputs.to(device)
             targets = targets.to(device)
 
@@ -72,4 +76,11 @@ def val_epoch(model, val_loader, loss_function, device):
 
             running_loss += loss.item()
 
-    return running_loss / len(val_loader)
+            all_targets.extend(targets.cpu().numpy())
+            all_outputs.extend(outputs.cpu().numpy())
+
+    avg_loss = running_loss / len(val_loader)
+    acc = accuracy_score(all_targets, np.round(all_outputs))
+    auc = roc_auc_score(all_targets, all_outputs)
+    
+    return avg_loss, acc, auc
