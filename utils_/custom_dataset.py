@@ -26,7 +26,7 @@ class ROP_Dataset(data.Dataset):
         
         self.annotations = json.load(open(os.path.join(data_path, 
                                                        'annotations', f"{split}.json")))
-        if split=="train" and "augument":
+        if split=="train" or split== "augument":
             self.img_transform=transforms.Compose([
                 ContrastEnhancement(),
                 transforms.Resize((300,300)),
@@ -38,7 +38,7 @@ class ROP_Dataset(data.Dataset):
                                      std=[0.2527,0.1889,0.1334])
                 # the mean and std is calculate by rop1 13 samples
                 ])
-        elif split=='val' and split=='test':
+        elif split=='val' or split=='test':
             self.img_transform=transforms.Compose([
                 ContrastEnhancement(),
                 transforms.Resize((300,300)),
@@ -46,6 +46,8 @@ class ROP_Dataset(data.Dataset):
                 transforms.Normalize(mean=[0.4623,0.3856,0.2822],
                                      std=[0.2527,0.1889,0.1334])
             ])
+        else:
+            raise ValueError(f"ilegal spilt : {split}")
     def __len__(self):
         return len(self.annotations)
     

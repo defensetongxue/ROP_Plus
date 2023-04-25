@@ -1,11 +1,11 @@
 import torch
-from torch.utils.data import DataLoader,ConcatDataset
+from torch.utils.data import DataLoader
 from config import get_config,update_config
 from config import _C as config
-from utils_ import get_instance, train_epoch, val_epoch,get_optimizer,get_factor
+from utils_ import get_instance, train_epoch, val_epoch,get_optimizer
 import os
 import models
-from utils_ import ROP_Dataset,ROP_AugmentedDataset
+from utils_ import ROP_Dataset
 if __name__=='__main__':
     # Parse arguments
     args = get_config()
@@ -24,7 +24,8 @@ if __name__=='__main__':
     # Load the datasets 
     train_dataset=ROP_Dataset(args.path_tar,split='train')
     val_dataset=ROP_Dataset(args.path_tar,split='val')
-    
+    NUM_CLASS=train_dataset.num_classes()
+
     # Augument datasets
     augument_dataset=ROP_Dataset(args.path_tar,split='augument')
     train_dataset+=augument_dataset
@@ -37,9 +38,9 @@ if __name__=='__main__':
 
     # Create the model and criterion
     model = get_instance(models, config.MODEL.MODEL_NAME,config,
-                         num_classes=train_dataset.num_classes())
+                         num_classes=NUM_CLASS)
     criterion=torch.nn.CrossEntropyLoss()
-    if os.path.isfile(config.BEGIN_CHECKPOINT):
+    if os.path.isfile(config.TRAIN.BEGIN_CHECKPOINT):
         print(f"loadding the exit checkpoints {config.BEGIN_CHECKPOINT}")
         model.load_state_dict(
         torch.load(args.from_checkpoint))
@@ -48,16 +49,16 @@ if __name__=='__main__':
     optimizer = get_optimizer(config, model)
 
 
-    last_epoch = args.configs.TRAIN.BEGIN_EPOCH
-    if isinstance(args.configs.TRAIN.LR_STEP, list):
+    last_epoch = config.TRAIN.BEGIN_EPOCH
+    if isinstance(config.TRAIN.LR_STEP, list):
         lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
-            optimizer, args.configs.TRAIN.LR_STEP,
-            args.configs.TRAIN.LR_FACTOR, last_epoch-1
+            optimizer, config.TRAIN.LR_STEP,
+            config.TRAIN.LR_FACTOR, last_epoch-1
         )
     else:
         lr_scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer, args.configs.TRAIN.LR_STEP,
-            args.configs.TRAIN.LR_FACTOR, last_epoch-1
+            optimizer, config.TRAIN.LR_STEP,
+            config.TRAIN.LR_FACTOR, last_epoch-1
         )
 
     # Set up the device
@@ -68,7 +69,7 @@ if __name__=='__main__':
     # Set up the optimizer, loss function, and early stopping
     early_stop_counter = 0
     best_val_loss = float('inf')
-    total_epoches=args.configs.TRAIN.END_EPOCH
+    total_epoches=config.TRAIN.END_EPOCH
 
     # Training and validation loop
     for epoch in range(last_epoch,total_epoches):
@@ -86,6 +87,6 @@ if __name__=='__main__':
             print(f"Model saved in epoch {epoch}")
         else:
             early_stop_counter += 1
-            if early_stop_counter >= args.configs.TRAIN.EARLY_STOP:
+            if early_stop_counter >= config.TRAIN.EARLY_STOP:
                 print("Early stopping triggered")
                 break

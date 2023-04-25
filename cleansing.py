@@ -7,6 +7,7 @@ import json
 from VesselSegModule import generate_vessel_result
 from OpticDetectModule import generate_OpticDetect_result
 from config import get_config
+from utils_ import generate_data_augument
 class generate_data_processer():
     def __init__(self,src_path="../autodl-tmp/data_original",
                  tar_path="../autodl-tmp/dataset_ROP",
@@ -270,3 +271,6 @@ if __name__ == '__main__':
         # else:
         #     generate_OpticDetect_result(data_path='./data')
         generate_OpticDetect_result(data_path=args.path_tar)
+    
+    if args.data_augument:
+        generate_data_augument(data_path=args.path_tar)

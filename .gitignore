@@ -2,10 +2,7 @@ __pycache__
 save_models/
 output/*
 *.ipynb
-VesselSeg_code/
 ring.py
-test_imge
 *.out
 .ipynb_checkpoints
-tmp.py
-Grad_save/
+experiments/

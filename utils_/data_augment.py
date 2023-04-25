@@ -55,7 +55,7 @@ def generate_data_augument(data_path="",threshold=0.2,sample_number=500):
         # DEFINE[factor]: for each image in rare class, we will generate {factor}
         #   augumented images and stored them in data_path/auugument
         factor = get_factor(annotations, cls, sample_number)
-        
+        print(f"Augument factor for class {cls} is {factor}")
         for rare_index in indices:
             for _ in range(factor):
                 image_path=annotations[rare_index]['image_path']
@@ -68,7 +68,7 @@ def generate_data_augument(data_path="",threshold=0.2,sample_number=500):
                     augument_from=image_path,
                     cls=annotations[rare_index]['class']
                 ))
-    with open(os.path.join(data_path,"annotations","augument.json",'w')) as f:
+    with open(os.path.join(data_path,"annotations","augument.json"),'w') as f:
         json.dump(augument_annotation,f)
             
 

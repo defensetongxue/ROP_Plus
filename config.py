@@ -21,6 +21,7 @@ _C.TRAIN.END_EPOCH = 500
 _C.TRAIN.EARLY_STOP = 30
 _C.TRAIN.OPTIMIZER = 'adam'
 _C.TRAIN.LR = 0.0001
+_C.TRAIN.LR_FACTOR = 0.1
 _C.TRAIN.WD = 0.0
 _C.TRAIN.LR_STEP = [30, 50]
 _C.TRAIN.MOMENTUM = 0.0
@@ -40,9 +41,10 @@ def get_config():
     parser.add_argument('--train_split', type=float, default=0.7, help='training data proportion')
     parser.add_argument('--val_split', type=float, default=0.1, help='valid data proportion')
 
-    parser.add_argument('--cleansing', type=bool, default=True, help='if parse orginal data')
+    parser.add_argument('--cleansing', type=bool, default=False, help='if parse orginal data')
     parser.add_argument('--vessel', type=bool, default=False, help='if generate vessel segmentation result')
     parser.add_argument('--optic_disc', type=bool, default=False, help='if doing optic disc detection')
+    parser.add_argument('--data_augument', type=bool, default=True, help='if doing optic disc detection')
 
     # train and test
     parser.add_argument('--config_file', type=str, default='./YAML/default.yaml', help='load config file')
