@@ -4,13 +4,14 @@ import torch
 from sklearn.metrics import roc_auc_score, accuracy_score
 from torch.utils.data import DataLoader
 import numpy as np
-from config import get_config
+from config import get_config,update_config
 import models
-
+from config import _C as config
 if __name__=='__main__':
     # Parse arguments
-    args,config = get_config()
-
+    args = get_config()
+    update_config(config,args)
+    
     # Create the model and criterion
     model = get_instance(models, config.MODEL.MODEL_NAME,config,
                          num_classes=ROP_Dataset(args.path_tar,split='train').num_classes())

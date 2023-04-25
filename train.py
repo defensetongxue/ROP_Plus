@@ -1,16 +1,18 @@
 import torch
 from torch.utils.data import DataLoader,ConcatDataset
-from config import get_config
+from config import get_config,update_config
+from config import _C as config
 from utils_ import get_instance, train_epoch, val_epoch,get_optimizer,get_factor
 import os
 import models
 from utils_ import ROP_Dataset,ROP_AugmentedDataset
 if __name__=='__main__':
     # Parse arguments
-    args,config = get_config()
+    args = get_config()
+    update_config(config,args)
 
     # Initialize the folder
-    os.makedirs(config.SAVE_DIR,exist_ok=True)
+    os.makedirs(config.MODEL.SAVE_DIR,exist_ok=True)
     # Init the result file to store the pytorch model and other mid-result
     model_path = os.path.join(config.MODEL.SAVE_DIR,config.MODEL.SAVE_NAME)
     print(f"model will be stored in {model_path}")
@@ -22,31 +24,11 @@ if __name__=='__main__':
     # Load the datasets 
     train_dataset=ROP_Dataset(args.path_tar,split='train')
     val_dataset=ROP_Dataset(args.path_tar,split='val')
-
-    # Augument dataset
-    # Find the rare classes with a proportion threshold
-    rare_classes = train_dataset.get_rare(threshold=2)
-
-    # Identify the indices of the minority class samples and calculate their augmentation factors
-    class_indices = []
-    class_augmentation_factors = []
-    target_samples = 500  # Example target number of samples per class
-
-    for cls in rare_classes:
-        indices = [i for i, annot in enumerate(train_dataset.annotations) if annot['class'] == cls]
-        class_indices.append(indices)
-        factor = get_factor(train_dataset, cls, target_samples)
-        class_augmentation_factors.append(factor)
-
-    # Create the augmented dataset
-    augmented_dataset = ROP_AugmentedDataset(train_dataset, class_indices, class_augmentation_factors)
-
-    # Create the augmented dataset
-    augmented_dataset = ROP_AugmentedDataset(train_dataset, class_indices, class_augmentation_factors)
-
-    # Combine the original and augmented datasets
-    train_dataset = ConcatDataset([train_dataset, augmented_dataset])
-
+    
+    # Augument datasets
+    augument_dataset=ROP_Dataset(args.path_tar,split='augument')
+    train_dataset+=augument_dataset
+    
     # Create the data loaders
     train_loader = DataLoader(train_dataset, batch_size=config.TRAIN.BATCH_SIZE_PER_GPU,
                               shuffle=True, num_workers=config.TRAIN.NUM_WORKERS)

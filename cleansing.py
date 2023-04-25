@@ -58,7 +58,7 @@ class generate_data_processer():
         # Get datacnt and label_map
         self.data_cnt=self.get_condition()
         self.label_map={}
-        for i,(key,_) in enumerate(self.data_cnt):
+        for i,key in enumerate(self.data_cnt.keys()):
             self.label_map[key]=i
         self.class_number=len(self.data_cnt.keys())
         self.split_ratio={
@@ -66,18 +66,21 @@ class generate_data_processer():
             "val":spilt_val,
             "test":1-spilt_train-spilt_val,
         }
-    def get_json(self,idL:int,image_name:str,image_name_original:str,
-                 image_path:str,image_path_original:str,
-                 label:str):
+    def get_json(self,id:int,
+                 image_name:str,
+                 image_name_original:str,
+                 image_path:str,
+                 image_path_original:str,
+                 label:int):
         return {
             "id": id,
             "image_name": image_name,
             "image_name_original":image_name_original,
             "image_path": image_path,
             "image_path_original": image_path_original,
-            "class": self.label_map(label)
+            "class": self.label_map[label]
         }
-    def get_label(self,file_name: str,file_dir:str):
+    def get_label(self,file_name: str,file_dir:str,logger=True):
         '''
         task: stage the rop,
         1,2,3,4,5 as str is the stage rop
@@ -92,7 +95,8 @@ class generate_data_processer():
             # pos_cnt=pos_cnt+1
             stage=(file_str[file_str.find("期")-1])
             if stage=='p': # no "期"，return p of .jpg
-                print(os.path.join(file_dir,file_name))
+                if logger:
+                    print(os.path.join(file_dir,file_name))
                 return "-1"
             assert stage in stage_list,"unexpected ROP stage : {} in file {}".format(stage,file_str)
             if stage=="行" or stage=="退" :
@@ -146,15 +150,16 @@ class generate_data_processer():
         '''
         Iterate the original dataset and generate data in {tar_path}
         '''
+        print(f"read data from {self.src_path} and generate cleansinged data in {self.tar_path}")
         train_annotations=[]
         val_annotations=[]
         test_annotations=[]
-        data_cnt=0 
+        datanumber_cnt=0 
         label_numbers=np.array(self.data_cnt.values())
         train_number_array=np.array(
-            [int(i*self.split_ratio['train']) for i in label_numbers])
+            [int(i*self.split_ratio['train']) for i in label_numbers.tolist()])
         val_number_array=np.array(
-            [int(i*self.split_ratio['val']) for i in label_numbers])
+            [int(i*self.split_ratio['val']) for i in label_numbers.tolist()])
         for person_file in os.listdir(self.src_path):
             eye_file_name = os.path.join(self.src_path, person_file)
             
@@ -166,7 +171,7 @@ class generate_data_processer():
                 if not os.path.isdir(file_dic):
                     continue
                 
-                file_class_cnt=zip(self.data_cnt.keys(),[0]*(self.class_number))
+                file_class_cnt=dict(zip(self.data_cnt.keys(),[0]*(self.class_number)))
                 annotations=[]
                 for file in os.listdir(file_dic):
                     # if the data can be used
@@ -175,11 +180,11 @@ class generate_data_processer():
                     try:
                         image=Image.open(os.path.join(file_dic,file))
                     except:
-                        print("{} can not open".format(
-                            os.path.join(file_dic,file)))
+                        # print("{} can not open".format(
+                        #     os.path.join(file_dic,file)))
                         continue
                     # generate vessel and saved
-                    label = self.get_label(file,file_dic)
+                    label = self.get_label(file,file_dic,logger=False)
 
                     if label=="-1":
                         # unexpectedd stage
@@ -188,25 +193,25 @@ class generate_data_processer():
                     # Build dict to record the label cnt
                     file_class_cnt[label]+=1
                     shutil.copy(os.path.join(file_dic,file),
-                        os.path.join(self.tar_path, 'images',f"{str(data_cnt)}.jpg"))
-                    annotations.append(self.get_json(data_cnt,
-                                                     image_name=f"{str(data_cnt)}.jpg",
+                        os.path.join(self.tar_path, 'images',f"{str(datanumber_cnt)}.jpg"))
+                    annotations.append(self.get_json(datanumber_cnt,
+                                                     image_name=f"{str(datanumber_cnt)}.jpg",
                                                      image_name_original= file,
-                                                     image_path=os.path.join(self.tar_path, 'images',f"{str(data_cnt)}.jpg"),
+                                                     image_path=os.path.join(self.tar_path, 'images',f"{str(datanumber_cnt)}.jpg"),
                                                      image_path_original = os.path.join(file_dic,file),
                                                      label=label))
-                    data_cnt+=1
-            # because of Note 2 
-            file_label_number=np.array(file_class_cnt.values())
-            if np.min(train_number_array-file_label_number)>=0:
-                train_number_array-=file_label_number
-                train_annotations.append(annotations)
-            elif np.min(val_number_array-file_label_number)>=0:
-                val_number_array-=file_label_number
-                val_annotations.append(annotations)
-            else:
-                test_annotations.append(annotations)
-
+                    datanumber_cnt+=1
+                # because of Note 2 
+                file_label_number=np.array([i for i in file_class_cnt.values()])
+                if np.min(train_number_array-file_label_number)>=0:
+                    train_number_array-=file_label_number
+                    train_annotations.extend(annotations)
+                elif np.min(val_number_array-file_label_number)>=0:
+                    val_number_array-=file_label_number
+                    val_annotations.extend(annotations)
+                else:
+                    test_annotations.extend(annotations)
+    
         # store annotation in Json file
         with open(os.path.join(self.tar_path, 'annotations', "train.json"), 'w') as f:
             json.dump(train_annotations, f)
@@ -217,13 +222,13 @@ class generate_data_processer():
 
         # print the data condition
         train_number_array_original=np.array(
-            [int(i*self.split_ratio['train']) for i in label_numbers])
+            [int(i*self.split_ratio['train']) for i in label_numbers.tolist()])
         val_number_array_original=np.array(
-            [int(i*self.split_ratio['val']) for i in label_numbers])
+            [int(i*self.split_ratio['val']) for i in label_numbers.tolist()])
         
         train_array=train_number_array_original-train_number_array
         val_array=val_number_array_original-val_number_array
-        test_array=label_numbers-train_array-val_array
+        test_array=np.array([i for i in label_numbers.tolist()])-train_array-val_array
         print("-------Dataset Split Condition-------")
         print("Train:")
         print(dict(zip(self.data_cnt.keys(),train_array)))
@@ -243,7 +248,7 @@ class generate_data_processer():
 
 if __name__ == '__main__':
     # Init the args
-    args,_ = get_config()
+    args = get_config()
     if args.cleansing:
         cleansing_processer=generate_data_processer(src_path=args.path_src,
                                                     tar_path=args.path_tar,
@@ -252,15 +257,16 @@ if __name__ == '__main__':
         cleansing_processer.paser()
 
     if args.vessel:
-        if not args.cleansing:
-            raise ValueError(
-                "You should cleansing the data before generate vessel segmentation result")
-        else:
-            generate_vessel_result(data_path='./data')
-    
-    if args.opric_disc:
-        if not args.cleansing:
-            raise ValueError(
-                "You should cleansing the data before generate optic disc coordinates")
-        else:
-            generate_OpticDetect_result(data_path='./data')
+        # if not args.cleansing:
+        #     raise ValueError(
+        #         "You should cleansing the data before generate vessel segmentation result")
+        # else:
+        #     generate_vessel_result(data_path='./data')
+        generate_vessel_result(data_path=args.path_tar)
+    if args.optic_disc:
+        # if not args.cleansing:
+        #     raise ValueError(
+        #         "You should cleansing the data before generate optic disc coordinates")
+        # else:
+        #     generate_OpticDetect_result(data_path='./data')
+        generate_OpticDetect_result(data_path=args.path_tar)
