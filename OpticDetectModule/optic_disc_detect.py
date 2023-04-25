@@ -46,6 +46,6 @@ def generate_OpticDetect_result(data_path='./data'):
     for image_name in img_list:
         img=Image.open(os.path.join(img_dir,image_name))
         processer(img,save_path=os.path.join(save_dir,f"{image_name.split('.')[0]}.txt"))
-
+        raise
     
         

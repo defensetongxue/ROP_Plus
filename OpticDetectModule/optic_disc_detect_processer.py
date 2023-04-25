@@ -5,22 +5,20 @@ from PIL import ImageEnhance
 import torchvision.transforms as transforms
 import math
 import numpy as np
-import yaml
-
+from .model_config import get_OpticDisc_model_config
 class OpticDetProcesser():
     def __init__(self,threshold=0.02):
-        with open('./OpticDetectModule/models/hrnet.yaml', 'r') as file:
-            config = yaml.safe_load(file)
-        self.model = HRNet(config)
+        config=get_OpticDisc_model_config()
+        self.model,_ = HRNet(config)
         checkpoint = torch.load(
             './OpticDetectModule/checkpoint/best.pth')
         self.model.load_state_dict(checkpoint)
         self.model.cuda()
 
-        # generate mask
+        # Transform define
         self.transforms = transforms.Compose([
-            ImageEnhance.Contrast(),
-            transforms.Resize((415,416)),
+            ContrastEnhancement(),
+            transforms.Resize((416,416)),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.4623, 0.3856, 0.2822],
                  std=[0.2527, 0.1889, 0.1334])
@@ -32,7 +30,7 @@ class OpticDetProcesser():
     def __call__(self, img,save_path=None):
         # open the image and preprocess
         ori_w,ori_h=img.size
-        print(ori_w,ori_h)
+        
         w_ratio,h_ratio=ori_w/416,ori_h/416
         img = self.transforms(img)
 
@@ -41,10 +39,10 @@ class OpticDetProcesser():
         output = self.model(img.cuda())
         # the input of the 512 is to match the mini-size of vessel model
         score_map = output.data.cpu()
-        prescence=(float(torch.max(score_map.flatten()))>self.shreshold)
+        prescence=(float(torch.max(score_map.flatten()))>self.threshold)
         preds = decode_preds(score_map)
         preds=preds.squeeze()
-        print(preds.shape)
+
         preds=preds*np.array([w_ratio,h_ratio])
 
         if save_path:
@@ -93,3 +91,12 @@ def decode_preds(output):
         preds = preds.view(1, preds.size())
 
     return preds*4 # heatmap is 1/4 to original image
+
+class ContrastEnhancement:
+    def __init__(self, factor=1.5):
+        self.factor = factor
+
+    def __call__(self, img):
+        enhancer = ImageEnhance.Contrast(img)
+        img = enhancer.enhance(self.factor)
+        return img

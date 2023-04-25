@@ -13,8 +13,8 @@ _C.MODEL.SAVE_NAME = 'best.pth'
 
 _C.TRAIN = CN()
 _C.TRAIN.BEGIN_CHECKPOINT = ''
-_C.TRAIN.BATCH_SIZE_PER_GPU = 32
-_C.TRAIN.NUM_WORKERS = 4
+_C.TRAIN.BATCH_SIZE_PER_GPU = 128
+_C.TRAIN.NUM_WORKERS = 12
 _C.TRAIN.SHUFFLE = True
 _C.TRAIN.BEGIN_EPOCH = 0
 _C.TRAIN.END_EPOCH = 500
@@ -42,9 +42,9 @@ def get_config():
     parser.add_argument('--val_split', type=float, default=0.1, help='valid data proportion')
 
     parser.add_argument('--cleansing', type=bool, default=False, help='if parse orginal data')
-    parser.add_argument('--vessel', type=bool, default=False, help='if generate vessel segmentation result')
-    parser.add_argument('--optic_disc', type=bool, default=False, help='if doing optic disc detection')
-    parser.add_argument('--data_augument', type=bool, default=True, help='if doing optic disc detection')
+    parser.add_argument('--vessel', type=bool, default=True, help='if generate vessel segmentation result')
+    parser.add_argument('--optic_disc', type=bool, default=True, help='if doing optic disc detection')
+    parser.add_argument('--data_augument', type=bool, default=False, help='if doing optic disc detection')
 
     # train and test
     parser.add_argument('--config_file', type=str, default='./YAML/default.yaml', help='load config file')

@@ -3,6 +3,7 @@ import torch
 from torch import optim
 import numpy as np
 from sklearn.metrics import roc_auc_score, accuracy_score
+from sklearn.preprocessing import label_binarize
 
 def get_instance(module, class_name, *args, **kwargs):
     try:
@@ -51,8 +52,9 @@ def train_epoch(model, optimizer, train_loader, loss_function, device):
 
         optimizer.zero_grad()
 
-        outputs = model(inputs)
-        loss = loss_function(outputs, targets)
+        outputs,aux_logit = model(inputs)
+        loss = loss_function(outputs, targets)+ \
+            loss_function(aux_logit,targets)
 
         loss.backward()
         optimizer.step()
@@ -65,6 +67,7 @@ def val_epoch(model, val_loader, loss_function, device):
     running_loss = 0.0
     all_targets = []
     all_outputs = []
+    all_probs = []
 
     with torch.no_grad():
         for inputs, targets, meta in val_loader:
@@ -72,15 +75,20 @@ def val_epoch(model, val_loader, loss_function, device):
             targets = targets.to(device)
 
             outputs = model(inputs)
+            probs = torch.softmax(outputs, dim=1)
+            predicted_labels = torch.argmax(outputs, dim=1)
+
             loss = loss_function(outputs, targets)
 
             running_loss += loss.item()
 
             all_targets.extend(targets.cpu().numpy())
-            all_outputs.extend(outputs.cpu().numpy())
+            all_outputs.extend(predicted_labels.cpu().numpy())
+            all_probs.extend(probs.cpu().numpy())
 
     avg_loss = running_loss / len(val_loader)
-    acc = accuracy_score(all_targets, np.round(all_outputs))
-    auc = roc_auc_score(all_targets, all_outputs)
-    
+    acc = accuracy_score(all_targets, all_outputs)
+    all_targets_binarized = label_binarize(all_targets, classes=np.arange(5))
+    auc = roc_auc_score(all_targets_binarized, all_probs, multi_class="ovr")
+
     return avg_loss, acc, auc
