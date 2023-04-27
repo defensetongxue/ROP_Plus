@@ -7,6 +7,7 @@ from config import get_config,update_config
 import models
 from sklearn.preprocessing import label_binarize
 from config import _C as config
+import os
 
 if __name__=='__main__':
     # Parse arguments
@@ -18,9 +19,10 @@ if __name__=='__main__':
                          num_classes=ROP_Dataset(args.path_tar,split='train').num_classes())
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model_path = os.path.join(config.MODEL.SAVE_DIR,config.MODEL.SAVE_NAME)
     model.to(device)
     model.load_state_dict(
-        torch.load(args.save_name))
+        torch.load(model_path))
     model.eval()
 
     # Create the dataset and data loader
