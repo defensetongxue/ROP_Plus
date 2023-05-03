@@ -270,6 +270,7 @@ if __name__ == '__main__':
         #         "You should cleansing the data before generate optic disc coordinates")
         # else:
         #     generate_OpticDetect_result(data_path='./data')
+        print("performing the optic detection task")
         generate_OpticDetect_result(data_path=args.path_tar)
     
     if args.data_augument:
