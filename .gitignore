@@ -6,3 +6,4 @@ ring.py
 *.out
 .ipynb_checkpoints
 experiments/
+EyeQualityModule/checkpoint
