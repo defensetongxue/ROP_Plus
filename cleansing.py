@@ -67,6 +67,23 @@ class generate_data_processer():
             "val":spilt_val,
             "test":1-spilt_train-spilt_val,
         }
+        self.map=self.map_list('./map_list.txt')
+
+    def map_list(self,map_list_file):
+        result_dict = {}
+
+        with open(map_list_file, 'r') as file:
+            for line in file:
+                a, b = line.strip().split(' ', 1)
+                result_dict[b] = a
+        return result_dict
+    
+    def get_map_name(self,file_path):
+        if file_path in self.map:
+            return self.map[file_path]
+        print(file_path)
+        raise
+
     def get_json(self,id:int,
                  image_name:str,
                  image_name_original:str,
@@ -147,6 +164,7 @@ class generate_data_processer():
                     else:
                         data_cnt[label] = 1
         return data_cnt
+    
     def paser(self):
         '''
         Iterate the original dataset and generate data in {tar_path}
@@ -161,6 +179,7 @@ class generate_data_processer():
             [int(i*self.split_ratio['train']) for i in label_numbers.tolist()])
         val_number_array=np.array(
             [int(i*self.split_ratio['val']) for i in label_numbers.tolist()])
+        
         for person_file in os.listdir(self.src_path):
             eye_file_name = os.path.join(self.src_path, person_file)
             
@@ -174,6 +193,8 @@ class generate_data_processer():
                 
                 file_class_cnt=dict(zip(self.data_cnt.keys(),[0]*(self.class_number)))
                 annotations=[]
+                eye_label="0"
+
                 for file in os.listdir(file_dic):
                     # if the data can be used
                     if not file.endswith(".jpg"):
@@ -186,22 +207,34 @@ class generate_data_processer():
                         continue
                     # generate vessel and saved
                     label = self.get_label(file,file_dic,logger=False)
-
+                    file_name=self.get_map_name(os.path.join(person_file,eye_file,file))
+                    
                     if label=="-1":
                         # unexpectedd stage
                         continue
-
+                        
                     # Build dict to record the label cnt
                     file_class_cnt[label]+=1
+
+                    if label != "0":
+                        if eye_label!="0"and label!=eye_label:
+                            print(f"Error in file {file_dic}")
+                        elif eye_label=="0":
+                            eye_label=label
+                        # else eye_label==label and not the zero: pass
+
                     shutil.copy(os.path.join(file_dic,file),
-                        os.path.join(self.tar_path, 'images',f"{str(datanumber_cnt)}.jpg"))
+                        os.path.join(self.tar_path, 'images',file_name))
                     annotations.append(self.get_json(datanumber_cnt,
-                                                     image_name=f"{str(datanumber_cnt)}.jpg",
+                                                     image_name=file_name,
                                                      image_name_original= file,
-                                                     image_path=os.path.join(self.tar_path, 'images',f"{str(datanumber_cnt)}.jpg"),
+                                                     image_path=os.path.join(self.tar_path, 'images',file_name),
                                                      image_path_original = os.path.join(file_dic,file),
-                                                     label=label))
+                                                     label=label))# the label now just act as Placeholder
                     datanumber_cnt+=1
+                for annote in annotations:
+                    annote['class']=eye_label
+                    
                 # because of Note 2 
                 file_label_number=np.array([i for i in file_class_cnt.values()])
                 if np.min(train_number_array-file_label_number)>=0:
@@ -238,13 +271,6 @@ class generate_data_processer():
         print("Test:")
         print(dict(zip(self.data_cnt.keys(),test_array)))
 
-    def push_image(self,target_dic,img, label,new_name):
-        target_path = os.path.join(target_dic, label)
-        if not os.path.exists(target_path):
-            os.makedirs(target_path)
-        with open(file=os.path.join(target_path,new_name),mode='wb') as file:
-            pickle.dump(np.array(img), file)
-    
     
 
 if __name__ == '__main__':
