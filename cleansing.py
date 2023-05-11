@@ -59,7 +59,7 @@ class generate_data_processer():
         # Get datacnt and label_map
         self.data_cnt=self.get_condition()
         self.label_map={}
-        for i,key in enumerate(self.data_cnt.keys()):
+        for i,key in enumerate(sorted(self.data_cnt.keys())):
             self.label_map[key]=i
         self.class_number=len(self.data_cnt.keys())
         self.split_ratio={
@@ -68,7 +68,7 @@ class generate_data_processer():
             "test":1-spilt_train-spilt_val,
         }
         self.map=self.map_list('./map_list.txt')
-
+        print(self.label_map)
     def map_list(self,map_list_file):
         result_dict = {}
 
@@ -89,7 +89,7 @@ class generate_data_processer():
                  image_name_original:str,
                  image_path:str,
                  image_path_original:str,
-                 label:int):
+                 label:str):
         return {
             "id": id,
             "image_name": image_name,
@@ -233,7 +233,7 @@ class generate_data_processer():
                                                      label=label))# the label now just act as Placeholder
                     datanumber_cnt+=1
                 for annote in annotations:
-                    annote['class']=eye_label
+                    annote['class']=self.label_map[eye_label]
                     
                 # because of Note 2 
                 file_label_number=np.array([i for i in file_class_cnt.values()])
