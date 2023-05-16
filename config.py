@@ -41,12 +41,12 @@ def get_config():
     parser.add_argument('--train_split', type=float, default=0.7, help='training data proportion')
     parser.add_argument('--val_split', type=float, default=0.1, help='valid data proportion')
 
-    parser.add_argument('--cleansing', type=bool, default=True, help='if parse orginal data')
-    parser.add_argument('--vessel', type=bool, default=False, help='if generate vessel segmentation result')
-    parser.add_argument('--optic_disc', type=bool, default=False, help='if doing optic disc detection')
-    parser.add_argument('--data_augument', type=bool, default=False, help='if doing optic disc detection')
+    parser.add_argument('--cleansing', type=bool, default=False, help='if parse orginal data')
+    parser.add_argument('--vessel', type=bool, default=True, help='if generate vessel segmentation result')
+    parser.add_argument('--optic_disc', type=bool, default=True, help='if doing optic disc detection')
+    parser.add_argument('--data_augument', type=bool, default=True, help='if doing optic disc detection')
 
-    parser.add_argument('--crop_r', type=int, default=20, help='vessel seg center crop radius')
+    parser.add_argument('--crop_r', type=int, default=200, help='vessel seg center crop radius')
     
     # train and test
     parser.add_argument('--config_file', type=str, default='./YAML/default.yaml', help='load config file')

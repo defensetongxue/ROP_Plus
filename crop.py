@@ -1,21 +1,25 @@
 import os
 import cv2
 import numpy as np
-
+from PIL import Image
 def crop(data_path, img_name, coordinate, radius=20):
     """
     Read an image from <data_path>/vessel_seg/<image_name>.jpg
     Crop the image through the coordinate, the coordinate is the center and radius is set by param
-    Save the cropped image to <data_path>/crop/<image_name>.jpg
+    Save the cropped image to <data_path>/crop_optic_disc/<image_name>.jpg
     """
     image_path = os.path.join(data_path, 'vessel_seg', f'{img_name}.jpg')
-    image = cv2.imread(image_path)
-    
-    x, y = coordinate
-    cropped_image = image[y - radius:y + radius, x - radius:x + radius]
+    image = Image.open(image_path)
 
-    output_path = os.path.join(data_path, 'crop', f'{img_name}.jpg')
-    cv2.imwrite(output_path, cropped_image)
+    x, y = coordinate
+    left = x - radius
+    top = y - radius
+    right = x + radius
+    bottom = y + radius
+    cropped_image = image.crop((left, top, right, bottom))
+    
+    output_path = os.path.join(data_path, 'crop_optic_disc', f'{img_name}.jpg')
+    cropped_image.save(output_path)
 
 def transforms(data_path, image_name):
     """
@@ -59,6 +63,8 @@ def generate_crop(data_path,radius):
     image_list=os.listdir(os.path.join(data_path,'images'))
     total=0
     cnt=0
+    os.makedirs(os.path.join(data_path, 'crop_optic_disc'),exist_ok=True)
+    os.system(f"rm -rf {os.path.join(data_path, 'crop_optic_disc')}/*")
     for file_name in image_list:
         total+=1
         image_name=file_name.split('.')[0]

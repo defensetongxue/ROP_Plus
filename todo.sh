@@ -1,4 +1,3 @@
 python -u cleansing.py
-python -u train.py
-python -u test.py
+python -u crop.py 
 python ring.py
