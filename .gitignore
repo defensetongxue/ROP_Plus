@@ -7,3 +7,4 @@ ring.py
 .ipynb_checkpoints
 experiments/
 EyeQualityModule/checkpoint
+checkpoints/
