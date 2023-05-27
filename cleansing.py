@@ -2,302 +2,140 @@ import os
 from PIL import Image
 import pickle 
 import numpy as np
-import shutil
+import cv2
 import json
 from VesselSegModule import generate_vessel_result
 from OpticDetectModule import generate_OpticDetect_result
 from config import get_config
-from utils_ import generate_data_augument
-class generate_data_processer():
-    def __init__(self,src_path="../autodl-tmp/data_original",
-                 tar_path="../autodl-tmp/dataset_ROP",
-                 spilt_train=0.7,
-                 spilt_val=0.2):
-        '''
-        find the original data in {src_path} and 
-        generate dataset in {target_patg} with the style:
-    
-        └───data
-            │
-            └───images
-            │   │
-            │   └───001.jpg
-            │   └───002.jpg
-            │   └───...
-            │
-            └───annotations
-                │
-                └───train.json
-                └───valid.json
-                └───test.json
-        The json format is
-        {
-            "id": <image id> : number,
-            "image_name": <image_name> : str,
-            "image_name_original": <image_name original> : str,
-            "image_path": <image_path> : str,
-            "image_path_original": <image_path in original dictionary> : str,
-            "class": <class> : number
-        }
 
-        Note-1: there is much images with strong similarity in original dataset,
-        we have to ensure they not be spilt in different subset
+def generate_preplus_map(file_dic):
+    preplus_map=[]
+    file_list=os.listdir(file_dic)
+    for i in file_list:
+        if not i.endswith('.json'):
+            continue
+        with open(os.path.join(file_dic,i),'r') as f:
+            data_list=json.load(f)
+        for data in data_list:
+            if data["plus_number"]>0 or data["pre_plus_number"]>0:
+                preplus_map.append(data["image_name"])
+    print(len(preplus_map))
+    return preplus_map
 
-        Note-2: The label is imbalance as the stage 3-5 ROP prety rare, 
-        we have to keep the proportion of each class balance in subsets
-        '''
-        super(generate_data_processer,self).__init__()
-        self.src_path=src_path
-        self.tar_path=tar_path
-
-        # Create essencial folder
-        os.makedirs(tar_path,exist_ok=True)
-        os.system(f"rm -rf {tar_path}/*") # clear exited data
-        os.makedirs(os.path.join(tar_path,"images"),exist_ok=True)
-        os.makedirs(os.path.join(tar_path,"annotations"),exist_ok=True)
-
-        # Get datacnt and label_map
-        self.data_cnt=self.get_condition()
-        self.label_map={}
-        for i,key in enumerate(sorted(self.data_cnt.keys())):
-            self.label_map[key]=i
-        self.class_number=len(self.data_cnt.keys())
-        self.split_ratio={
-            "train":spilt_train,
-            "val":spilt_val,
-            "test":1-spilt_train-spilt_val,
-        }
-        self.map=self.map_list('./map_list.txt')
-        print(self.label_map)
-    def map_list(self,map_list_file):
-        result_dict = {}
-
-        with open(map_list_file, 'r') as file:
-            for line in file:
-                a, b = line.strip().split(' ', 1)
-                result_dict[b] = a
-        return result_dict
-    
-    def get_map_name(self,file_path):
-        if file_path in self.map:
-            return self.map[file_path]
-        print(file_path)
-        raise
-
-    def get_json(self,id:int,
-                 image_name:str,
-                 image_name_original:str,
-                 image_path:str,
-                 image_path_original:str,
-                 label:str):
-        return {
-            "id": id,
-            "image_name": image_name,
-            "image_name_original":image_name_original,
-            "image_path": image_path,
-            "image_path_original": image_path_original,
-            "class": self.label_map[label]
-        }
-    def get_label(self,file_name: str,file_dir:str,logger=True):
-        '''
-        task: stage the rop,
-        1,2,3,4,5 as str is the stage rop
-        0 no-rop
-        6: 消退期
-        -1 待排
-        '''
-        file_str=file_name.replace(" ","")
-
-        stage_list=["1","2","3","4","5","行","退"]
-        if file_str.startswith("ROP"):
-            # pos_cnt=pos_cnt+1
-            stage=(file_str[file_str.find("期")-1])
-            if stage=='p': # no "期"，return p of .jpg
-                if logger:
-                    print(os.path.join(file_dir,file_name))
-                return "-1"
-            assert stage in stage_list,"unexpected ROP stage : {} in file {}".format(stage,file_str)
-            if stage=="行" or stage=="退" :
-                return "6"
-            return stage
-        else:
-            return "0"
-        
-    def get_condition(self):
-        '''
-        Iterate the original dataset but do nothing, the main contribution
-        of this function is:
-            1. get the number of each stage ROP to define the data spilt (Note 2)
-
-       
-        '''
-        data_cnt = {}
-
-        for person_file in os.listdir(self.src_path):
-            eye_file_name = os.path.join(self.src_path, person_file)
-            
-            if not os.path.isdir(eye_file_name):
-                continue
-            for eye_file in os.listdir(eye_file_name):
-                # OS/OD
-                file_dic = os.path.join(self.src_path, person_file, eye_file)
-                if not os.path.isdir(file_dic):
-                    continue
-                for file in os.listdir(file_dic):
-                    # if the data can be used
-                    if not file.endswith(".jpg"):
-                        continue 
-                    try:
-                        image=Image.open(os.path.join(file_dic,file))
-                    except:
-                        print("{} can not open".format(
-                            os.path.join(file_dic,file)))
-                        continue
-                    # generate vessel and saved
-                    label = self.get_label(file,file_dic)
-
-                    if label=="-1":
-                        # unexpectedd stage
-                        continue
-                    if label in data_cnt:
-                        data_cnt[label] +=1
-                    else:
-                        data_cnt[label] = 1
-        return data_cnt
-    
-    def paser(self):
-        '''
-        Iterate the original dataset and generate data in {tar_path}
-        '''
-        print(f"read data from {self.src_path} and generate cleansinged data in {self.tar_path}")
-        train_annotations=[]
-        val_annotations=[]
-        test_annotations=[]
-        datanumber_cnt=0 
-        label_numbers=np.array(self.data_cnt.values())
-        train_number_array=np.array(
-            [int(i*self.split_ratio['train']) for i in label_numbers.tolist()])
-        val_number_array=np.array(
-            [int(i*self.split_ratio['val']) for i in label_numbers.tolist()])
-        
-        for person_file in os.listdir(self.src_path):
-            eye_file_name = os.path.join(self.src_path, person_file)
-            
-            if not os.path.isdir(eye_file_name):
-                continue
-            for eye_file in os.listdir(eye_file_name):
-                # OS/OD
-                file_dic = os.path.join(self.src_path, person_file, eye_file)
-                if not os.path.isdir(file_dic):
-                    continue
-                
-                file_class_cnt=dict(zip(self.data_cnt.keys(),[0]*(self.class_number)))
-                annotations=[]
-                eye_label="0"
-
-                for file in os.listdir(file_dic):
-                    # if the data can be used
-                    if not file.endswith(".jpg"):
-                        continue 
-                    try:
-                        image=Image.open(os.path.join(file_dic,file))
-                    except:
-                        # print("{} can not open".format(
-                        #     os.path.join(file_dic,file)))
-                        continue
-                    # generate vessel and saved
-                    label = self.get_label(file,file_dic,logger=False)
-                    file_name=self.get_map_name(os.path.join(person_file,eye_file,file))
-                    
-                    if label=="-1":
-                        # unexpectedd stage
-                        continue
-                        
-                    # Build dict to record the label cnt
-                    file_class_cnt[label]+=1
-
-                    if label != "0":
-                        if eye_label!="0"and label!=eye_label:
-                            print(f"Error in file {file_dic}")
-                        elif eye_label=="0":
-                            eye_label=label
-                        # else eye_label==label and not the zero: pass
-
-                    shutil.copy(os.path.join(file_dic,file),
-                        os.path.join(self.tar_path, 'images',file_name))
-                    annotations.append(self.get_json(datanumber_cnt,
-                                                     image_name=file_name,
-                                                     image_name_original= file,
-                                                     image_path=os.path.join(self.tar_path, 'images',file_name),
-                                                     image_path_original = os.path.join(file_dic,file),
-                                                     label=label))# the label now just act as Placeholder
-                    datanumber_cnt+=1
-                for annote in annotations:
-                    annote['class']=self.label_map[eye_label]
-                    
-                # because of Note 2 
-                file_label_number=np.array([i for i in file_class_cnt.values()])
-                if np.min(train_number_array-file_label_number)>=0:
-                    train_number_array-=file_label_number
-                    train_annotations.extend(annotations)
-                elif np.min(val_number_array-file_label_number)>=0:
-                    val_number_array-=file_label_number
-                    val_annotations.extend(annotations)
+def gen_plus_annotation(data_path,preplus_map):
+    splits=['train','val','test']
+    os.makedirs(os.path.join(data_path,'annotations_Plus'),exist_ok=True)
+    os.system(f"rm -rf {os.path.join(data_path,'annotations_Plus')}/*")
+    for split in splits:
+        with open(os.path.join(data_path,'annotations',f"{split}.json"),'r') as f:
+            data_file=json.load(f)
+        annotation_res=[]
+        pos_cnt=0
+        zero_cnt=0
+        for data in data_file:
+            if os.path.exists(os.path.join(data_path,'crop_optic_disc',data['image_name'])) :
+                if data['image_name'] in preplus_map:
+                    pos_cnt+=1
+                    annotation_res.append({
+                        "image_path":os.path.join(data_path,'crop_optic_disc',data['image_name']),
+                        "image_name":data["image_name"],
+                        "class":1
+                    })
                 else:
-                    test_annotations.extend(annotations)
-    
-        # store annotation in Json file
-        with open(os.path.join(self.tar_path, 'annotations', "train.json"), 'w') as f:
-            json.dump(train_annotations, f)
-        with open(os.path.join(self.tar_path, 'annotations', "val.json"), 'w') as f:
-            json.dump(val_annotations, f)
-        with open(os.path.join(self.tar_path, 'annotations', "test.json"), 'w') as f:
-            json.dump(test_annotations, f)
+                    zero_cnt+=1
+                    annotation_res.append({
+                        "image_path":os.path.join(data_path,'crop_optic_disc',data['image_name']),
+                        "image_name":data["image_name"],
+                        "class":0
+                    })
+        print(f"Pre Plus {split}: total: {pos_cnt+zero_cnt} 1: {pos_cnt}, 0: {zero_cnt}")
+        with open(os.path.join(data_path,'annotations_pre',f"{split}.json"),'w') as f:
+            json.dump(annotation_res,f)   
 
-        # print the data condition
-        train_number_array_original=np.array(
-            [int(i*self.split_ratio['train']) for i in label_numbers.tolist()])
-        val_number_array_original=np.array(
-            [int(i*self.split_ratio['val']) for i in label_numbers.tolist()])
-        
-        train_array=train_number_array_original-train_number_array
-        val_array=val_number_array_original-val_number_array
-        test_array=np.array([i for i in label_numbers.tolist()])-train_array-val_array
-        print("-------Dataset Split Condition-------")
-        print("Train:")
-        print(dict(zip(self.data_cnt.keys(),train_array)))
-        print("Val:")
-        print(dict(zip(self.data_cnt.keys(),val_array)))
-        print("Test:")
-        print(dict(zip(self.data_cnt.keys(),test_array)))
+def crop(data_path, img_name, coordinate, radius=20):
+    """
+    Read an image from <data_path>/vessel_seg/<image_name>.jpg
+    Crop the image through the coordinate, the coordinate is the center and radius is set by param
+    Save the cropped image to <data_path>/crop_optic_disc/<image_name>.jpg
+    """
+    image_path = os.path.join(data_path, 'vessel_seg', f'{img_name}.jpg')
+    image = Image.open(image_path)
 
+    x, y = coordinate
+    left = x - radius
+    top = y - radius
+    right = x + radius
+    bottom = y + radius
+    cropped_image = image.crop((left, top, right, bottom))
     
+    output_path = os.path.join(data_path, 'crop_optic_disc', f'{img_name}.jpg')
+    cropped_image.save(output_path)
+
+def transforms(data_path, image_name):
+    """
+    Read the coordinate from <data_path>/optic_disc/<image_name>.txt with format "x y\n"
+    If the optic_disc/<image_name>.txt is empty: return False
+    else
+
+    Get the original image size from <data_path>/images/<image_name>.jpg
+    and target image size from <data_path>/vessel_seg/<image_name>.jpg
+
+    Transform the coordinate in original image to where it is in target image
+    Return the transformed coordinate
+    """
+    coordinate_file_path = os.path.join(data_path, 'optic_disc', f'{image_name}.txt')
+    with open(coordinate_file_path, 'r') as f:
+        content = f.read().strip()
+        if not content:
+            return False
+        coordinate = tuple(map(int, content.split()))
+
+    original_image_path = os.path.join(data_path, 'images', f'{image_name}.jpg')
+    original_image = cv2.imread(original_image_path)
+    original_height, original_width = original_image.shape[:2]
+
+    target_image_path = os.path.join(data_path, 'vessel_seg', f'{image_name}.jpg')
+    target_image = cv2.imread(target_image_path)
+    target_height, target_width = target_image.shape[:2]
+
+    x_ratio = target_width / original_width
+    y_ratio = target_height / original_height
+
+    transformed_x = int(coordinate[0] * x_ratio)
+    transformed_y = int(coordinate[1] * y_ratio)
+
+    return (transformed_x, transformed_y)
+
+def generate_crop(data_path,radius):
+    '''
+    read the image in 
+    '''
+    image_list=os.listdir(os.path.join(data_path,'images'))
+    total=0
+    cnt=0
+    os.makedirs(os.path.join(data_path, 'crop_optic_disc'),exist_ok=True)
+    os.system(f"rm -rf {os.path.join(data_path, 'crop_optic_disc')}/*")
+    for file_name in image_list:
+        total+=1
+        image_name=file_name.split('.')[0]
+        transformed_cord= transforms(data_path,image_name)
+        if transformed_cord:
+            crop(data_path,image_name,transformed_cord,radius)
+            cnt+=1
+    print(f"there is {total} images with {cnt} has optic disc")
+
 
 if __name__ == '__main__':
     # Init the args
     args = get_config()
-    if args.cleansing:
-        cleansing_processer=generate_data_processer(src_path=args.path_src,
-                                                    tar_path=args.path_tar,
-                                                    spilt_train=args.train_split,
-                                                    spilt_val=args.val_split )
-        cleansing_processer.paser()
-    
+
     if args.vessel:
-        # if not args.cleansing:
-        #     raise ValueError(
-        #         "You should cleansing the data before generate vessel segmentation result")
-        # else:
-        #     generate_vessel_result(data_path='./data')
+        print("performing vessel segment task")
         generate_vessel_result(data_path=args.path_tar)
     if args.optic_disc:
-        # if not args.cleansing:
-        #     raise ValueError(
-        #         "You should cleansing the data before generate optic disc coordinates")
-        # else:
-        #     generate_OpticDetect_result(data_path='./data')
         print("performing the optic detection task")
         generate_OpticDetect_result(data_path=args.path_tar)
-    
-    if args.data_augument:
-        generate_data_augument(data_path=args.path_tar)
+
+    pre_map=generate_preplus_map(os.path.join(args.path_tar,'ridge'))
+    gen_plus_annotation(args.path_tar,pre_map)
+    generate_crop(args.path_tar,radius=args.crop_r)
